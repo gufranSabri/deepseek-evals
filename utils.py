@@ -1,194 +1,93 @@
 
 import warnings
 import os
-from tqdm import tqdm
-import os
-import pandas as pd
-import numpy as np
-import random
-import os
-import argparse
-import datetime
-from datasets import load_dataset
-
-import torch
-from transformers import TextStreamer
-from unsloth import FastLanguageModel
-
-
-from trl import SFTTrainer
-from transformers import TrainingArguments
-from unsloth import is_bfloat16_supported
-
-
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-class Logger:
-    def __init__(self, file_path):
-        if not os.path.exists("/".join(file_path.split("/")[:-1])):
-            os.mkdir("/".join(file_path.split("/")[:-1]))
-            
-        self.file_path = file_path
-
-    def __call__(self, message):
-        with open(self.file_path, "a") as f:
-            f.write(f"{message}\n")
-            print(message)
+from datasets import load_dataset
+from unsloth import FastLanguageModel
 
 class FT_Dataset:
-    def __init__(self, EOS_TOKEN, split="train"):
+    def __init__(self, EOS_TOKEN, split="train", logger = None):
         self.EOS_TOKEN = EOS_TOKEN
         self.split = split
+        self.logger = logger
 
         self.dataset_names = {
-            "classification":"ajgt_twitter_ar",
+            "sentiment":"ajgt_twitter_ar",
             "diacratization":"arbml/tashkeelav2",
             "mcq":"arbml/cidar-mcq-100",
             "pos_tagging":"universal_dependencies",
-            "rating": "arbml/cidar_alpag_chat",
             "summarization":"arbml/easc",
             "translation":"Helsinki-NLP/tatoeba_mt",
+            "paraphrasing": "aishaalansari/Paraphrasing" ,
+            "transliteration": "aishaalansari/Transliteration_ANETAC",
+            "GQA": "SEACrowd/tydiqa",
         }
 
         self.subset_names = {
-            "classification": None,
+            "sentiment": None,
             "diacratization": None,
             "mcq": None,
             "pos_tagging": "ar_padt",
-            "rating": None,
             "summarization": None,
             "translation": "ara-rus",
+            "paraphrasing": None,
+            "transliteration": None,
+            "GQA": None,
         }
 
-        self.train_prompt_template = """
-Below is an instruction that describes a task, paired with an input that provides further context. 
-Write a response that appropriately completes the request. 
-Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.
-
-### Instruction:
-You are a medical expert with advanced knowledge in clinical reasoning, diagnostics, and treatment planning. 
-Please answer the following medical question. 
-
-### Question:
-{}
-
-### Response:
-{}
-"""
-
-        self.inference_prompt_template = """
-Below is an instruction that describes a task, paired with an input that provides further context. 
-Write a response that appropriately completes the request. 
-Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.
-
-### Instruction:
-You are a medical expert with advanced knowledge in clinical reasoning, diagnostics, and treatment planning. 
-Please answer the following medical question. 
-
-### Question:
-{}
-
-### Response:
-{}
-"""
-
-        self.train_prompt_template_cot = """
-Below is an instruction that describes a task, paired with an input that provides further context. 
-Write a response that appropriately completes the request. 
-Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.
-
-### Instruction:
-You are a medical expert with advanced knowledge in clinical reasoning, diagnostics, and treatment planning. 
-Please answer the following medical question. 
-
-### Question:
-{}
-
-### Response:
-<think>
-{}
-</think>
-{}
-"""
-
-        self.inference_prompt_template_cot = """
-Below is an instruction that describes a task, paired with an input that provides further context. 
-Write a response that appropriately completes the request. 
-Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.
-
-### Instruction:
-You are a medical expert with advanced knowledge in clinical reasoning, diagnostics, and treatment planning. 
-Please answer the following medical question. 
-
-### Question:
-{}
-
-### Response:
-<think>{}
-"""
-
-        # self.column_names = {
-        #     "classification": {
-        #         "X": ["text"],
-        #         "Y": ["label"],
-        #     },
-        #     "diacratization": {
-        #         "X": ["text"],
-        #         "Y": ["diacratized"],
-        #     },
-        #     "mcq": {
-        #         "X": ["Question", "A", "B", "C", "D"],
-        #         "Y": ["answer"],
-        #     },
-        #     "pos_tagging": {
-        #         "X": ["text"],
-        #         "Y": ["label"],
-        #     },
-        #     "rating": {
-        #         "X": ["text"],
-        #         "Y": ["label"],
-        #     },
-        #     "summarization": {
-        #         "X": ["article"],
-        #         "Y": ["summary"],
-        #     },
-        #     "translation": {
-        #         "X": ["sourceString"],
-        #         "Y": ["targetString"],
-        #     },
-        # }
-
         self.prompt_func_map = {
-            "classification": self.format_prompt_classification,
+            "sentiment": self.format_prompt_sentiment,
             "diacratization": self.format_prompt_diacratization,
             "mcq": self.format_prompt_mcq,
             "pos_tagging": self.format_prompt_postagging,
-            "rating": None,
             "summarization": self.format_prompt_summarization,
             "translation": self.format_prompt_translation,
+            "transliteration": self.format_prompt_transliteration,
+            "transliteration": self.format_prompt_GQA,
         }
-        
+
+        self.task_instructions = {
+            "sentiment": "You are an expert in sentiment analysis and natural language processing. Analyze the given text and determine whether its sentiment is positive or negative.",
+            "diacratization": "You are an expert in Arabic linguistics and orthography. Given an undiacritized Arabic text, accurately restore the missing diacritics.",
+            "mcq": "You are an advanced AI tutor with expertise in multiple-choice reasoning. Carefully analyze the question and provided answer choices, then select the correct answer.",
+            "pos_tagging": ';You are a computational linguist specializing in syntactic analysis. Given a sentence, identify and label the part-of-speech (POS) tag for each word. Your options are ["NOUN", "PUNCT", "ADP", "NUM", "SYM", "SCONJ", "ADJ", "PART", "DET", "CCONJ", "PROPN", "PRON", "X", "ADV", "INTJ", "VERB", "AUX"]',
+            "summarization": "You are a professional text summarizer with expertise in extracting key information. Read the given text and generate a concise and coherent summary that preserves the main ideas and important details.",
+            "translation": "You are a multilingual translation expert proficient in Arabic and Russian. Translate the following Arabic text into fluent and grammatically correct Russian while preserving the original meaning.",
+            "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rephrase the given sentence in a clear, natural, and grammatically correct way.",
+            "transliteration": "You are a linguistic specialist skilled in phonetic transcription. Convert the given text from one script to another while preserving pronunciation as accurately as possible.",
+            "GQA": "You are an advanced knowledge-based AI trained in answering general questions across multiple domains. Provide an accurate, well-structured, and informative response to the following question."
+        }
+
+        self.task_instructions_ar = {
+            "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى وحدد ما إذا كانت مشاعره إيجابية أم سلبية.",
+            "diacratization": "أنت خبير في علم اللغة والنحو العربي. إذا كان النص العربي غير مشوه، قم باستعادة التشبيهات المفقودة بدقة.",
+            "mcq": "أنت مدرس متقدم في مجال الذكاء الاصطناعي يتمتع بخبرة في التفكير متعدد الخيارات. قم بتحليل السؤال وخيارات الإجابة المقدمة بعناية، ثم حدد الإجابة الصحيحة.",
+            "pos_tagging": 'أنت عالم لغوي حاسوبي متخصص في التحليل النحوي. إذا كان لديك جملة، حدد وسم كل كلمة من الكلمات. خياراتك هي ["NOUN"، "PUNCT"، "ADP"، "NUM"، "SYM"، "SCONJ"، "ADJ"، "PART"، "DET"، "CCONJ"، "PROPN"، "PRON"، "X"، "ADV"، "INTJ"، "VERB"، "AUX"]',
+            "summarization": "أنت متخصص في تلخيص النصوص ولديك خبرة في استخراج المعلومات الأساسية. اقرأ النص المقدم وأنشئ ملخصًا موجزًا ​​ومتماسكًا يحافظ على الأفكار الرئيسية والتفاصيل المهمة.",
+            "translation": "أنت خبير في الترجمة متعددة اللغات وتتقن اللغتين العربية والروسية. قم بترجمة النص العربي التالي إلى اللغة الروسية السليمة والصحيحة لغويًا مع الحفاظ على المعنى الأصلي.",
+            "paraphrasing": "أنت خبير لغوي ماهر في إعادة كتابة النص مع الحفاظ على معناه الأصلي. أعد صياغة الجملة المعطاة بطريقة واضحة وطبيعية وصحيحة نحويًا.",
+            "transliteration": "أنت متخصص لغوي ماهر في النسخ الصوتي. قم بتحويل النص المعطى من نص إلى آخر مع الحفاظ على النطق بدقة قدر الإمكان.",
+            "GQA": "أنت عبارة عن ذكاء اصطناعي متقدم قائم على المعرفة ومدرب على الإجابة على أسئلة عامة عبر مجالات متعددة. قدم إجابة دقيقة ومنظمة جيدًا وغنية بالمعلومات للسؤال التالي.",
+        }
+
         self.size = -1
 
     def get_size(self):
         assert self.size > 0, "Call get_dataset first() !!!"
         return self.size
 
-    def format_prompt_classification(self, data):
+    def format_prompt_sentiment(self, data):
         inputs = data["text"]
         outputs = data["label"]
         texts = []
 
         for text, label in zip(inputs, outputs):
-            text = self.train_prompt_template.format(text, label) + self.EOS_TOKEN
+            text = self.prompt_template.format(text, label) + self.EOS_TOKEN
             texts.append(text)
-        return {
-            "text": texts,
-        }
+        
+        return {"text": texts}
 
     def format_prompt_diacratization(self, data):
         inputs = data["text"]
@@ -196,11 +95,10 @@ Please answer the following medical question.
         texts = []
 
         for text, diacratized in zip(inputs, outputs):
-            text = self.train_prompt_template.format(text, diacratized) + self.EOS_TOKEN
+            text = self.prompt_template.format(text, diacratized) + self.EOS_TOKEN
             texts.append(text)
-        return {
-            "text": texts,
-        }
+        
+        return {"text": texts}
 
     def format_prompt_mcq(self, data):
         question = data["Question"]
@@ -209,11 +107,10 @@ Please answer the following medical question.
         texts = []
 
         for question, a, b, c, d, answer in zip(question, A, B, C, D, answers):
-            text = self.train_prompt_template.format(question+"\n"+a+"\n"+b+"\n"+c+"\n"+d, answer) + self.EOS_TOKEN
+            text = self.prompt_template.format(question+"\n"+a+"\n"+b+"\n"+c+"\n"+d, answer) + self.EOS_TOKEN
             texts.append(text)
-        return {
-            "text": texts,
-        }
+
+        return {"text": texts}
 
 
     def format_prompt_postagging(self, data):
@@ -236,12 +133,10 @@ Please answer the following medical question.
             tokenized_sents[i] = " ".join(tokenized_sents[i])
 
         for inp, output in zip(tokenized_sents, outputs):
-            text = self.train_prompt_template.format(inp, output) + self.EOS_TOKEN
+            text = self.prompt_template.format(inp, output) + self.EOS_TOKEN
             texts.append(text)
 
-        return {
-            "text": texts,
-        }
+        return {"text": texts}
 
 
     def format_prompt_summarization(self, data):
@@ -250,11 +145,10 @@ Please answer the following medical question.
         texts = []
 
         for article, summary in zip(articles, summaries):
-            text = self.train_prompt_template.format(article, summary) + self.EOS_TOKEN
+            text = self.prompt_template.format(article, summary) + self.EOS_TOKEN
             texts.append(text)
-        return {
-            "text": texts,
-        }
+        
+        return {"text": texts}
 
     def format_prompt_translation(self, data):
         sourceStrings = data["sourceString"]
@@ -262,14 +156,84 @@ Please answer the following medical question.
         texts = []
 
         for sourceString, targetString in zip(sourceStrings, targetStrings):
-            text = self.train_prompt_template.format(sourceString, targetString) + self.EOS_TOKEN
+            text = self.prompt_template.format(sourceString, targetString) + self.EOS_TOKEN
             texts.append(text)
-        return {
-            "text": texts,
-        }
+        
+        return {"text": texts}
 
+    def format_prompt_transliteration(self,data):
+        EN = data["text"][:(data.num_rows//2)]
+        AR = data["text"][data.num_rows//2:]
+        texts = []
+ 
+        for en, ar in zip(EN, AR):
+            text = self.prompt_template.format(en, ar) + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
 
-    def get_dataset(self, task):
+    def format_prompt_paraphrasing(self, data):
+        sentences = data["First sentence"]
+        paraphrases = data["second sentence"]
+        texts = []
+ 
+        for sent, para in zip(sentences, paraphrases):
+            text = self.prompt_template.format(sent, para) + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
+
+    def format_prompt_GQA(self, data):
+        question = data[""]
+        answer = data[""]
+        texts = []
+ 
+        for Question, Answer  in zip(question, answer):
+            text = self.prompt_template.format(Question, Answer) + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
+
+    def construct_prompt(self, task, lang):
+        if lang == "en":
+            self.prompt_template = "Below is an instruction that describes a task, paired with an input that provides further context.\n"
+            self.prompt_template += "Write a response that appropriately completes the request.\n"
+            self.prompt_template += "Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.\n"
+            self.prompt_template += "\n"
+            self.prompt_template += "### Instruction:\n"
+            self.prompt_template += f"{self.task_instructions[task]}\n"
+            self.prompt_template += "\n"
+            self.prompt_template += f"### Question:\n"
+            self.prompt_template += "{}"
+            self.prompt_template += "\n"
+            self.prompt_template += f"### Response:\n"
+            self.prompt_template += "{}"
+
+        elif lang == "ar":
+            self.prompt_template = "يوجد أدناه تعليمات تصف مهمة، مقترنة بإدخال يوفر سياقًا إضافيًا." + "\n"
+            self.prompt_template += "اكتب الرد الذي يكمل الطلب بشكل مناسب." + "\n"
+            self.prompt_template = "قبل الإجابة، فكر جيدًا في السؤال وقم بإنشاء سلسلة من الأفكار خطوة بخطوة لضمان الحصول على إجابة منطقية ودقيقة." + "\n"
+            self.prompt_template += "\n"
+            self.prompt_template += ":تعليمات" + "###" + "\n"
+            self.prompt_template += f"{self.task_instructions_ar[task]}\n"
+            self.prompt_template += "\n"
+            self.prompt_template += ":سؤال" + "###" + "\n"
+            self.prompt_template += "{}"
+            self.prompt_template += "\n"
+            self.prompt_template += ":إجابة" + "###" + "\n"
+            self.prompt_template += "{}"
+
+        else:
+            self.logger(lang + " not supported")
+            exit()
+
+        self.logger("PROMPT:")
+        self.logger(self.prompt_template)
+        self.logger("\n\n")
+
+    def get_dataset(self, task, lang="en"):
+        self.construct_prompt(task, lang)
+
         dataset_name = self.dataset_names[task]
         subset_name = self.subset_names[task]
         dataset = load_dataset(dataset_name, subset_name, split=self.split, trust_remote_code=True)
@@ -277,7 +241,9 @@ Please answer the following medical question.
         self.size = dataset.num_rows
         dataset = dataset.map(self.prompt_func_map[task], batched = True)
 
-        print(dataset["text"][-5])
+        self.logger("EXAMPLE DATA INSTANCE")
+        self.logger(dataset["text"][-1])
+        self.logger("\n\n")
 
         return dataset
 
@@ -295,7 +261,6 @@ class DeepSeek_FT_Models:
             "Q14B":"unsloth/DeepSeek-R1-Distill-Qwen-14B",
             "Q32B":"unsloth/DeepSeek-R1-Distill-Qwen-32B",
         }
-
 
     def get_model(self, args):
         model, tokenizer = FastLanguageModel.from_pretrained(
@@ -319,15 +284,24 @@ class DeepSeek_FT_Models:
 
         return model, tokenizer
 
+class Logger:
+    def __init__(self, file_path):
+        if not os.path.exists("/".join(file_path.split("/")[:-1])):
+            os.mkdir("/".join(file_path.split("/")[:-1]))
+            
+        self.file_path = file_path
+
+    def __call__(self, message):
+        with open(self.file_path, "a") as f:
+            f.write(f"{message}\n")
+            print(message)
+            
+
 if __name__ == "__main__":
-    # FT_Dataset("10").get_dataset("classification")
-    # FT_Dataset("10").get_dataset("diacratization")
-    # FT_Dataset("10").get_dataset("mcq")
-    FT_Dataset("10").get_dataset("pos_tagging")
-    # FT_Dataset(10).get_dataset("rating")
-    # FT_Dataset("10").get_dataset("summarization")
-    # FT_Dataset("10").get_dataset("translation")
-
-    
-
-
+    FT_Dataset("").get_dataset("sentiment")
+    FT_Dataset("").get_dataset("diacratization")
+    FT_Dataset("").get_dataset("mcq")
+    FT_Dataset("").get_dataset("pos_tagging")
+    FT_Dataset("").get_dataset("rating")
+    FT_Dataset("").get_dataset("summarization")
+    FT_Dataset("").get_dataset("translation")

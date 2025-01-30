@@ -1,35 +1,23 @@
 import warnings
 import os
-from tqdm import tqdm
-import os
-import pandas as pd
+warnings.filterwarnings("ignore")
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import numpy as np
 import random
 import os
 import argparse
-import datetime
-from datasets import load_dataset
-
-from unsloth import FastLanguageModel
 import torch
-from transformers import TextStreamer
+
 from unsloth import FastLanguageModel
-
-from datasets import load_dataset
-
 from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
 
-warnings.filterwarnings("ignore")
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-from utils import Logger, FT_Dataset, DeepSeek_FT_Models
+from utils import Logger, FT_Dataset, DeepSeek_FT_Models, Logger
 
 def finetune(args):
+    # SEED STUFF
     seed = 42
     random.seed(seed)
     torch.manual_seed(seed)
@@ -39,13 +27,16 @@ def finetune(args):
     torch.backends.cudnn.deterministic=True
     torch.backends.cudnn.benchmark=False
 
+    # MODEL AND TOKENIZER
     model, tokenizer = DeepSeek_FT_Models(args.model).get_model(args)
 
-    dataset_helper_train = FT_Dataset(tokenizer.eos_token, split="train")
-    dataset_train = dataset_helper_train.get_dataset(args.task)
+    # DATASET PREP
+    dataset_helper_train = FT_Dataset(tokenizer.eos_token, split="train", logger=logger)
+    dataset_train = dataset_helper_train.get_dataset(args.task, args.prompt_lang)
     dataset_size_train = dataset_helper_train.get_size()
 
-    max_steps = int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps))
+    # TRAIN
+    max_steps = int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps)) - 100
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -64,42 +55,41 @@ def finetune(args):
             logging_steps=10,
             optim="adamw_8bit",
             weight_decay=0.01,
-            lr_scheduler_type="cosine",
+            lr_scheduler_type="linear",
             seed=seed,
             output_dir="outputs",
         ),
     )
     trainer_stats = trainer.train()
 
-    if not os.path.exists("./models"):
-        os.mkdir("./models")
-
-    model_path = os.path.join("./models/", f"{args.model}_{args.task}")
+    # SAVE MODEL
+    if not os.path.exists("./models"): os.mkdir("./models")
+    model_path = os.path.join("./models/", f"{args.model}_{args.task}_{args.prompt_lang}")
     model.save_pretrained(model_path) 
     tokenizer.save_pretrained(model_path)
     model.save_pretrained_merged(model_path, tokenizer, save_method = "merged_16bit")
 
 
-    question = "هذا المطعم سيء جدا"
-
+    # TEST
     FastLanguageModel.for_inference(model)
-    inputs = tokenizer([dataset_helper_train.inference_prompt_template.format(question, "")], return_tensors="pt").to("cuda")
-
-    outputs = model.generate(
-        input_ids=inputs.input_ids,
-        attention_mask=inputs.attention_mask,
-        max_new_tokens=1200,
-        use_cache=True,
-    )
-    response = tokenizer.batch_decode(outputs)
-    print(response[0].split("### Response:")[1])
-
+    questions = ["هذا المطعم سيء جدا", "خدمة الفندق غير جيدة", "خدمة المطعم ممتازة"]
+    for q in questions:
+        inputs = tokenizer([dataset_helper_train.prompt_template.format(q, "")], return_tensors="pt").to("cuda")
+        outputs = model.generate(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            max_new_tokens=1200,
+            use_cache=True,
+        )
+        response = tokenizer.batch_decode(outputs)
+        print(response[0].split(":إجابة###")[-1].replace(tokenizer.eos_token, ""))
 
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
-    parser.add_argument('--task',dest='task', default='classification')
+    parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
+    parser.add_argument('--task',dest='task', default='sentiment')
     parser.add_argument('--rank',dest='rank', default='4', help='4, 8, 16')
     parser.add_argument('--load_4bit',dest='load_4bit', default='0')
     parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
@@ -115,12 +105,20 @@ if __name__ == '__main__':
     args.gradient_accumulation_steps = int(args.gradient_accumulation_steps)
     args.epochs = int(args.epochs)
 
-    assert args.task in ["classification", "diacratization", "mcq", "pos_tagging", "rating", "summarization", "translation"], "Invalid Task!"
+    assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
+    assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "rating", "summarization", "translation"], "Invalid Task!"
+    assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
     assert args.load_4bit in [0, 1], "Invalid Rank!"
     assert args.max_seq_length in [512, 1024, 2048], "Invalid Rank!"
     assert args.batch_size in [2, 4, 8], "Invalid Batch Size!"
     assert args.gradient_accumulation_steps in [2], "Invalid Grad Accumulation Steps!"
     assert args.epochs > 0, "Number of epochs should be greater than 0"
+
+    logger = Logger(os.path.join("./logs/", f"{args.model}_{args.task}_{args.prompt_lang}.txt"))
+    logger("CONFIGS:")
+    for arg, value in vars(args).items():
+        logger(f"{arg.upper()}: {value}")
+    logger("\n\n")
 
     finetune(args)
