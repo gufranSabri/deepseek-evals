@@ -22,37 +22,38 @@ python finetune.py --model Q1.5B --task sentiment --prompt_lang ar --rank 4 --lo
 ```
 
 - <b>model</b>
--- options: ['L8B', 'L70B', 'Q1.5B', 'Q7B', 'Q14B', 'Q32B']
--- description: The model to be fine-tuned.
+-- options: ['L8B', 'L70B', 'Q1.5B', 'Q7B', 'Q14B', 'Q32B']<br>
+-- description: The model to be fine-tuned.<br>
 
 - <b>task</b>
--- options: ['sentiment', 'diacratization', 'mcq', 'pos_tagging', 'summarization', 'translation', 'transliteration']
+-- options: ['sentiment', 'diacratization', 'mcq', 'pos_tagging', 'summarization', 'translation', 'transliteration']<br>
+-- description: Which NLP task to train on.<br>
 
 - <b>prompt_lang</b>
--- options: ['ar', 'en']
--- description: The language of the prompt.
+-- options: ['ar', 'en']<br>
+-- description: The language of the prompt.<br>
 
 - <b>rank</b>
--- options: ['4', '8', '16']
--- description: The rank of LoRA decomposition.
+-- options: ['4', '8', '16']<br>
+-- description: The rank of LoRA decomposition.<br>
 
 - <b>load_4bit</b>
--- options: ['0', '1']
--- description: Whether to load the 4-bit model or not.
+-- options: ['0', '1']<br>
+-- description: Whether to load the 4-bit model or not.<br>
 
 - <b>max_seq_length</b>
--- options: [512, 1024, 2048]
--- description: The maximum sequence length.
+-- options: [512, 1024, 2048]<br>
+-- description: The maximum sequence length.<br>
 
 - <b>batch_size</b>
--- options: [2, 4, 8, 16, 32]
--- description: The batch size.
+-- options: [2, 4, 8, 16, 32]<br>
+-- description: The batch size.<br>
 
 - <b>gradient_accumulation_steps</b>
--- options: [1, 2, 4, 8]
--- description: The number of gradient accumulation steps.
+-- options: [1, 2, 4, 8]<br>
+-- description: The number of gradient accumulation steps.<br>
 
 - <b>epochs</b>
--- description: The number of epochs.
+-- description: The number of epochs.<br>
 
 ## Evaluation
