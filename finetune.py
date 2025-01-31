@@ -64,10 +64,6 @@ def finetune(args):
     )
     trainer_stats = trainer.train()
 
-    logger("TRAINING STATS:")
-    for key, value in trainer_stats.items():
-        logger(f"{key}: {value}")
-
     # SAVE MODEL
     if not os.path.exists("./models"): os.mkdir("./models")
     model_path = os.path.join("./models/", f"{args.model}_{args.task}_{args.prompt_lang}")

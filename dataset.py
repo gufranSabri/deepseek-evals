@@ -22,7 +22,7 @@ class FT_Dataset:
             "translation":"Helsinki-NLP/tatoeba_mt",
             "paraphrasing": "aishaalansari/Paraphrasing" ,
             "transliteration": "aishaalansari/Transliteration_ANETAC",
-            "GQA": "SEACrowd/tydiqa",
+            "GQA": "asas-ai/tydiqa-goldp-ar",
         }
 
         self.subset_names = {
@@ -62,11 +62,11 @@ class FT_Dataset:
 
         self.task_instructions_ar = {
             "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى وحدد ما إذا كانت مشاعره إيجابية أم سلبية.",
-            "diacratization": "أنت خبير في علم اللغة والنحو العربي. إذا كان النص العربي غير مشوه، قم باستعادة التشبيهات المفقودة بدقة.",
-            "mcq": "أنت مدرس متقدم في مجال الذكاء الاصطناعي يتمتع بخبرة في التفكير متعدد الخيارات. قم بتحليل السؤال وخيارات الإجابة المقدمة بعناية، ثم حدد الإجابة الصحيحة.",
-            "pos_tagging": 'أنت عالم لغوي حاسوبي متخصص في التحليل النحوي. إذا كان لديك جملة، حدد وسم كل كلمة من الكلمات. خياراتك هي ["NOUN"، "PUNCT"، "ADP"، "NUM"، "SYM"، "SCONJ"، "ADJ"، "PART"، "DET"، "CCONJ"، "PROPN"، "PRON"، "X"، "ADV"، "INTJ"، "VERB"، "AUX"]',
+            "diacratization": "أنت خبير في علم اللغة والنحو العربي. إذا كان النص العربي بدون علامات تشكيل، قم باستعادة علامات التشكيل المفقودة بدقة.",
+            "mcq": "أنت مدرس متقدم في مجال الذكاء الاصطناعي يتمتع بخبرة في اسئلة الاختيار من متعدد. قم بتحليل السؤال والخيارات المقدمة بعناية، ثم حدد الإجابة الصحيحة.",
+            "pos_tagging": '["NOUN"، "PUNCT"، "ADP"، "NUM"، "SYM"، "SCONJ"، "ADJ"، "PART"، "DET"، "CCONJ"، "PROPN"، "PRON"، "X"، "ADV"، "INTJ"، "VERB"، "AUX"] أنت عالم لغوي حاسوبي متخصص في التحليل النحوي. إذا كان لديك جملة، حدد النوع الصرفي لكل كلمة من الكلمات. خياراتك هي',
             "summarization": "أنت متخصص في تلخيص النصوص ولديك خبرة في استخراج المعلومات الأساسية. اقرأ النص المقدم وأنشئ ملخصًا موجزًا ​​ومتماسكًا يحافظ على الأفكار الرئيسية والتفاصيل المهمة.",
-            "translation": "أنت خبير في الترجمة متعددة اللغات وتتقن اللغتين العربية والروسية. قم بترجمة النص العربي التالي إلى اللغة الروسية السليمة والصحيحة لغويًا مع الحفاظ على المعنى الأصلي.",
+            "translation": "أنت خبير في الترجمة متعددة اللغات وتتقن اللغتين العربية والروسية. قم بترجمة النص التالي من اللغة العربية إلى اللغة الروسية بشكل صحيح وسليم لغويًا، مع الحفاظ على المعنى الأصلي.",
             "paraphrasing": "أنت خبير لغوي ماهر في إعادة كتابة النص مع الحفاظ على معناه الأصلي. أعد صياغة الجملة المعطاة بطريقة واضحة وطبيعية وصحيحة نحويًا.",
             "transliteration": "أنت متخصص لغوي ماهر في النسخ الصوتي. قم بتحويل النص المعطى من نص إلى آخر مع الحفاظ على النطق بدقة قدر الإمكان.",
             "GQA": "أنت عبارة عن ذكاء اصطناعي متقدم قائم على المعرفة ومدرب على الإجابة على أسئلة عامة عبر مجالات متعددة. قدم إجابة دقيقة ومنظمة جيدًا وغنية بالمعلومات للسؤال التالي.",
@@ -75,7 +75,7 @@ class FT_Dataset:
         self.size = -1
 
     def get_size(self):
-        assert self.size > 0, "Call get_dataset first() !!!"
+        assert self.size > 0, "Call get_dataset() first !!!"
         return self.size
 
     def format_prompt_sentiment(self, data):
@@ -184,12 +184,12 @@ class FT_Dataset:
         return {"text": texts}
 
     def format_prompt_GQA(self, data):
-        question = data[""]
-        answer = data[""]
+        question = data["question_text"]
+        answer = data["answers"]
         texts = []
  
-        for Question, Answer  in zip(question, answer):
-            text = self.prompt_template.format(Question, Answer) + self.EOS_TOKEN
+        for q, a in zip(question, answer):
+            text = self.prompt_template.format(q, a["text"]) + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
