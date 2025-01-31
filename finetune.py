@@ -38,7 +38,13 @@ def finetune(args):
     dataset_size_train = dataset_helper_train.get_size()
 
     # TRAIN
-    max_steps = int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps)) - 100
+    max_steps = min(int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps)), args.max_steps)
+    
+    logger("======================================================")
+    logger("STARTING TRAINING")
+    logger(f"Dataset size: {dataset_size_train}")
+    logger(f"Max Steps: {max_steps}")
+    logger(f"Total possible steps: {int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps))}")
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -62,29 +68,36 @@ def finetune(args):
             output_dir="outputs",
         ),
     )
+    
     trainer_stats = trainer.train()
+    logger("\n\n======================================================")
+    logger("TRAINING FINISHED")
+    logger(f"Training loss: {trainer_stats.training_loss}")
+    logger(f"Best model checkpoint: {trainer_stats.best_model_checkpoint}")
 
     # SAVE MODEL
     if not os.path.exists("./models"): os.mkdir("./models")
     model_path = os.path.join("./models/", f"{args.model}_{args.task}_{args.prompt_lang}")
+    os.mkdir(model_path)
+
     model.save_pretrained(model_path) 
     tokenizer.save_pretrained(model_path)
     model.save_pretrained_merged(model_path, tokenizer, save_method = "merged_16bit")
 
 
-    # TEST
-    FastLanguageModel.for_inference(model)
-    questions = ["هذا المطعم سيء جدا", "خدمة الفندق غير جيدة", "خدمة المطعم ممتازة"]
-    for q in questions:
-        inputs = tokenizer([dataset_helper_train.prompt_template.format(q, "")], return_tensors="pt").to("cuda")
-        outputs = model.generate(
-            input_ids=inputs.input_ids,
-            attention_mask=inputs.attention_mask,
-            max_new_tokens=1200,
-            use_cache=True,
-        )
-        response = tokenizer.batch_decode(outputs)
-        print(response[0].split(":إجابة###")[-1].replace(tokenizer.eos_token, ""))
+    # # TEST
+    # FastLanguageModel.for_inference(model)
+    # questions = ["هذا المطعم سيء جدا", "خدمة الفندق غير جيدة", "خدمة المطعم ممتازة"]
+    # for q in questions:
+    #     inputs = tokenizer([dataset_helper_train.prompt_template.format(q, "")], return_tensors="pt").to("cuda")
+    #     outputs = model.generate(
+    #         input_ids=inputs.input_ids,
+    #         attention_mask=inputs.attention_mask,
+    #         max_new_tokens=1200,
+    #         use_cache=True,
+    #     )
+    #     response = tokenizer.batch_decode(outputs)
+    #     print(response[0].split(":إجابة###")[-1].replace(tokenizer.eos_token, ""))
 
 
 if __name__ == '__main__':
@@ -98,6 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
     parser.add_argument('--epochs', dest='epochs', default='1')
+    parser.add_argument('--max_steps', dest='max_steps', default='500')
     args=parser.parse_args()
 
     args.rank = int(args.rank)
@@ -106,6 +120,7 @@ if __name__ == '__main__':
     args.batch_size = int(args.batch_size)
     args.gradient_accumulation_steps = int(args.gradient_accumulation_steps)
     args.epochs = int(args.epochs)
+    args.max_steps = int(args.max_steps)
 
     assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
     assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
@@ -121,7 +136,7 @@ if __name__ == '__main__':
     logger("CONFIGS:")
     for arg, value in vars(args).items():
         logger(f"{arg.upper()}: {value}")
-    logger("\n\n")
+    logger("\n\n======================================================")
 
     try:
         finetune(args)

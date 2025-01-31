@@ -8,6 +8,7 @@ from huggingface_hub import login
 from datasets import load_dataset
  
 from datasets import load_dataset
+from unsloth import FastLanguageModel
 
 class FT_Dataset:
     def __init__(self, EOS_TOKEN, split="train", logger = None):
@@ -246,7 +247,7 @@ class FT_Dataset:
         self.size = dataset.num_rows
         dataset = dataset.map(self.prompt_func_map[task], batched = True)
 
-        self.logger("EXAMPLE DATA INSTANCE")
+        self.logger("EXAMPLE DATA INSTANCE:")
         self.logger(dataset["text"][-1])
         self.logger("\n\n")
 
