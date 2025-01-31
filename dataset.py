@@ -4,11 +4,15 @@ import os
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+from huggingface_hub import login
 from datasets import load_dataset
-from unsloth import FastLanguageModel
+ 
+from datasets import load_dataset
 
 class FT_Dataset:
     def __init__(self, EOS_TOKEN, split="train", logger = None):
+        login(token="<HUGGING FACE API TOKEN>")
+
         self.EOS_TOKEN = EOS_TOKEN
         self.split = split
         self.logger = logger
@@ -44,6 +48,7 @@ class FT_Dataset:
             "pos_tagging": self.format_prompt_postagging,
             "summarization": self.format_prompt_summarization,
             "translation": self.format_prompt_translation,
+            "paraphrasing": self.format_prompt_paraphrasing,
             "transliteration": self.format_prompt_transliteration,
             "transliteration": self.format_prompt_GQA,
         }
