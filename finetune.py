@@ -1,5 +1,7 @@
 import warnings
 import os
+import time
+
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -68,12 +70,18 @@ def finetune(args):
             output_dir="outputs",
         ),
     )
-    
+
+    start_time = time.time()
     trainer_stats = trainer.train()
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    hours, rem = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(rem, 60)
+
     logger("\n\n======================================================")
     logger("TRAINING FINISHED")
     logger(f"Training loss: {trainer_stats.training_loss}")
-    # logger(f"Best model checkpoint: {trainer_stats.best_model_checkpoint}")
+    logger(f"Time Taken: {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
 
     # SAVE MODEL
     if not os.path.exists("./models"): os.mkdir("./models")
@@ -83,7 +91,6 @@ def finetune(args):
     model.save_pretrained(model_path) 
     tokenizer.save_pretrained(model_path)
     model.save_pretrained_merged(model_path, tokenizer, save_method = "merged_16bit")
-
 
     # # TEST
     # FastLanguageModel.for_inference(model)
@@ -111,7 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
     parser.add_argument('--epochs', dest='epochs', default='1')
-    parser.add_argument('--max_steps', dest='max_steps', default='50')
+    parser.add_argument('--max_steps', dest='max_steps', default='50000')
     args=parser.parse_args()
 
     args.rank = int(args.rank)
