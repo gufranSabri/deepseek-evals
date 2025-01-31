@@ -14,7 +14,9 @@ from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
 
-from utils import Logger, FT_Dataset, DeepSeek_FT_Models, Logger
+from model import DeepSeek_FT_Models
+from dataset import FT_Dataset
+from utils import Logger
 
 def finetune(args):
     # SEED STUFF
@@ -61,6 +63,10 @@ def finetune(args):
         ),
     )
     trainer_stats = trainer.train()
+
+    logger("TRAINING STATS:")
+    for key, value in trainer_stats.items():
+        logger(f"{key}: {value}")
 
     # SAVE MODEL
     if not os.path.exists("./models"): os.mkdir("./models")
