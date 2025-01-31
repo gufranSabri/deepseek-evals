@@ -73,7 +73,7 @@ def finetune(args):
     logger("\n\n======================================================")
     logger("TRAINING FINISHED")
     logger(f"Training loss: {trainer_stats.training_loss}")
-    logger(f"Best model checkpoint: {trainer_stats.best_model_checkpoint}")
+    # logger(f"Best model checkpoint: {trainer_stats.best_model_checkpoint}")
 
     # SAVE MODEL
     if not os.path.exists("./models"): os.mkdir("./models")
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
     parser.add_argument('--epochs', dest='epochs', default='1')
-    parser.add_argument('--max_steps', dest='max_steps', default='500')
+    parser.add_argument('--max_steps', dest='max_steps', default='50')
     args=parser.parse_args()
 
     args.rank = int(args.rank)

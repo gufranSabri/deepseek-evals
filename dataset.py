@@ -1,6 +1,9 @@
-
 import warnings
 import os
+import pickle
+import pandas as pd
+from datasets import Dataset
+
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -12,46 +15,126 @@ from unsloth import FastLanguageModel
 
 class FT_Dataset:
     def __init__(self, EOS_TOKEN, split="train", logger = None):
-        login(token="<HUGGING FACE API TOKEN>")
+        login(token="<HUGGING_FACE_API_TOKEN>")
 
         self.EOS_TOKEN = EOS_TOKEN
         self.split = split
         self.logger = logger
 
         self.dataset_names = {
-            "sentiment":"ajgt_twitter_ar",
-            "diacratization":"arbml/tashkeelav2",
-            "mcq":"arbml/cidar-mcq-100",
-            "pos_tagging":"universal_dependencies",
-            "summarization":"arbml/easc",
-            "translation":"Helsinki-NLP/tatoeba_mt",
-            "paraphrasing": "aishaalansari/Paraphrasing" ,
-            "transliteration": "aishaalansari/Transliteration_ANETAC",
-            "GQA": "asas-ai/tydiqa-goldp-ar",
+            "sentiment_train":"ajgt_twitter_ar",
+            "sentiment_test":"ajgt_twitter_ar",
+
+            "diacratization_train":"arbml/tashkeelav2",
+            "diacratization_test":"arbml/tashkeelav2",
+
+            "mcq_train":"aishaalansari/CIDAR100",
+            "mcq_test":"aishaalansari/CIDAR100",
+
+            "pos_tagging_train":"universal_dependencies",
+            "pos_tagging_test":"universal_dependencies",
+
+            "summarization_train":"./data/arabic.pkl",
+            "summarization_test":"arbml/easc",
+
+            "translation_train":"Zaid/tmp-translation",
+            "translation_test":"Zaid/tmp-translation",
+
+            "paraphrasing_train": "aishaalansari/paraphrase" ,
+            "paraphrasing_test": "aishaalansari/Paraphrasing",
+
+            "transliteration_train": "aishaalansari/Transliteration_ANETAC",
+            "transliteration_test": "aishaalansari/Transliteration_ANETAC",
+
+            "GQA_train": "asas-ai/tydiqa-goldp-ar",
+            "GQA_test": "asas-ai/tydiqa-goldp-ar",
+        }
+
+        self.dataset_splits = {
+            "sentiment_train":"train[:1440]",
+            "sentiment_test":"train[1440:]",
+
+            "diacratization_train":"train",
+            "diacratization_test":"test",
+
+            "mcq_train":"train",
+            "mcq_test":"test",
+
+            "pos_tagging_train":"train",
+            "pos_tagging_test":"test",
+
+            "summarization_train":"train",
+            "summarization_test":"train",
+
+            "translation_train":"train",
+            "translation_test":"test",
+
+            "paraphrasing_train": "train",
+            "paraphrasing_test": "train",
+
+            "transliteration_train": "train",
+            "transliteration_test": "test",
+
+            "GQA_train": "train",
+            "GQA_test": "validation",
         }
 
         self.subset_names = {
-            "sentiment": None,
-            "diacratization": None,
-            "mcq": None,
-            "pos_tagging": "ar_padt",
-            "summarization": None,
-            "translation": "ara-rus",
-            "paraphrasing": None,
-            "transliteration": None,
-            "GQA": None,
+            "sentiment_train": None,
+            "sentiment_test": None,
+
+            "diacratization_train": None,
+            "diacratization_test": None,
+
+            "mcq_train": None,
+            "mcq_test": None,
+
+            "pos_tagging_train": "ar_padt",
+            "pos_tagging_test": "ar_padt",
+
+            "summarization_train": None,
+            "summarization_test": None,
+
+            "translation_train": None,
+            "translation_test": None,
+
+            "paraphrasing_train": None,
+            "paraphrasing_test": None,
+
+            "transliteration_train": None,
+            "transliteration_test": None,
+
+            "GQA_train": None,
+            "GQA_test": None,
         }
 
         self.prompt_func_map = {
-            "sentiment": self.format_prompt_sentiment,
-            "diacratization": self.format_prompt_diacratization,
-            "mcq": self.format_prompt_mcq,
-            "pos_tagging": self.format_prompt_postagging,
-            "summarization": self.format_prompt_summarization,
-            "translation": self.format_prompt_translation,
-            "paraphrasing": self.format_prompt_paraphrasing,
-            "transliteration": self.format_prompt_transliteration,
-            "transliteration": self.format_prompt_GQA,
+            "sentiment_train": self.format_prompt_sentiment,
+            "sentiment_test": self.format_prompt_sentiment,
+
+            "diacratization_train": self.format_prompt_diacratization,
+            "diacratization_test": self.format_prompt_diacratization,
+
+            "mcq_train": self.format_prompt_mcq,
+            "mcq_test": self.format_prompt_mcq,
+
+            "pos_tagging_train": self.format_prompt_postagging,
+            "pos_tagging_test": self.format_prompt_postagging,
+
+            "summarization_train": self.format_prompt_summarization,
+            "summarization_test": self.format_prompt_summarization,
+
+            "translation_train": self.format_prompt_translation,
+            "translation_test": self.format_prompt_translation,
+
+            "paraphrasing_train": self.format_prompt_paraphrasing,
+            "paraphrasing_test": self.format_prompt_paraphrasing,
+
+            "transliteration_train": self.format_prompt_transliteration,
+            "transliteration_test": self.format_prompt_transliteration,
+
+            "GQA_train": self.format_prompt_GQA,
+            "GQA_test": self.format_prompt_GQA,
         }
 
         self.task_instructions = {
@@ -63,7 +146,7 @@ class FT_Dataset:
             "translation": "You are a multilingual translation expert proficient in Arabic and Russian. Translate the following Arabic text into fluent and grammatically correct Russian while preserving the original meaning.",
             "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rephrase the given sentence in a clear, natural, and grammatically correct way.",
             "transliteration": "You are a linguistic specialist skilled in phonetic transcription. Convert the given text from one script to another while preserving pronunciation as accurately as possible.",
-            "GQA": "You are an advanced knowledge-based AI trained in answering general questions across multiple domains. Provide an accurate, well-structured, and informative response to the following question."
+            "GQA": "You are an advanced knowledge-based AI trained in answering general questions across multiple domains. Provide an accurate, well-structured, and informative response to the following question.",
         }
 
         self.task_instructions_ar = {
@@ -146,8 +229,11 @@ class FT_Dataset:
 
 
     def format_prompt_summarization(self, data):
-        articles = data["article"]
-        summaries = data["summary"]
+        X_col = "article" if self.split == "test" else "input_text"
+        y_col = "summary" if self.split == "test" else "target_text"        
+
+        articles = data[X_col]
+        summaries = data[y_col]
         texts = []
 
         for article, summary in zip(articles, summaries):
@@ -167,24 +253,36 @@ class FT_Dataset:
         
         return {"text": texts}
 
-    def format_prompt_transliteration(self,data):
-        EN = data["text"][:(data.num_rows//2)]
-        AR = data["text"][data.num_rows//2:]
+    def format_prompt_paraphrasing(self, data):
+        sentences, paraphrases = [], []
+
+        if self.split == "test":
+            temp = data["First sentence;second sentence;44_experts;similarity;parahrase"]
+            for d in temp:
+                d = d.split(";")
+                sentences.append(d[0])
+                paraphrases.append(d[1])
+        else:
+            sentences = data["Source"]
+            paraphrases = data["Target"]
+
         texts = []
- 
-        for en, ar in zip(EN, AR):
-            text = self.prompt_template.format(en, ar) + self.EOS_TOKEN
+        for sent, para in zip(sentences, paraphrases):
+            text = self.prompt_template.format(sent, para) + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
 
-    def format_prompt_paraphrasing(self, data):
-        sentences = data["First sentence"]
-        paraphrases = data["second sentence"]
+    
+    def format_prompt_transliteration(self,data):
+        num_rows = len(data["text"])
+
+        EN = data["text"][:(num_rows//2)]
+        AR = data["text"][num_rows//2:]
         texts = []
  
-        for sent, para in zip(sentences, paraphrases):
-            text = self.prompt_template.format(sent, para) + self.EOS_TOKEN
+        for en, ar in zip(EN, AR):
+            text = self.prompt_template.format(en, ar) + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -240,12 +338,33 @@ class FT_Dataset:
     def get_dataset(self, task, lang="en"):
         self.construct_prompt(task, lang)
 
-        dataset_name = self.dataset_names[task]
-        subset_name = self.subset_names[task]
-        dataset = load_dataset(dataset_name, subset_name, split=self.split, trust_remote_code=True)
+        task_split = task + "_" + self.split
+        if os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".pkl"):
+            with open(self.dataset_names[task_split], 'rb') as pickle_file:
+                arabic_docs=pickle.load(pickle_file)
+
+            flat_data = []
+            for url, sections in arabic_docs.items():
+                for section_name, section_data in sections.items():
+                    flat_data.append({
+                        'input_text': section_data['document'],
+                        'target_text': section_data['summary'],
+                    })
+
+            df = pd.DataFrame(flat_data)
+            dataset = Dataset.from_pandas(df)
+        else:
+            dataset_name = self.dataset_names[task_split]
+            subset_name = self.subset_names[task_split]
+            dataset = load_dataset(dataset_name, subset_name, split=self.dataset_splits[task_split], trust_remote_code=True)
 
         self.size = dataset.num_rows
-        dataset = dataset.map(self.prompt_func_map[task], batched = True)
+        dataset = dataset.map(self.prompt_func_map[task_split], batched = True)
+
+        self.logger("\n\n")
+        self.logger("DATASET SUMMARY:")
+        self.logger(str(dataset))
+        self.logger("\n\n")
 
         self.logger("EXAMPLE DATA INSTANCE:")
         self.logger(dataset["text"][-1])
@@ -255,10 +374,11 @@ class FT_Dataset:
 
 
 if __name__ == "__main__":
-    FT_Dataset("").get_dataset("sentiment")
-    FT_Dataset("").get_dataset("diacratization")
-    FT_Dataset("").get_dataset("mcq")
-    FT_Dataset("").get_dataset("pos_tagging")
-    FT_Dataset("").get_dataset("rating")
-    FT_Dataset("").get_dataset("summarization")
-    FT_Dataset("").get_dataset("translation")
+    # FT_Dataset("").get_dataset("sentiment")
+    # FT_Dataset("").get_dataset("diacratization")
+    # FT_Dataset("").get_dataset("mcq")
+    # FT_Dataset("").get_dataset("pos_tagging")
+    # FT_Dataset("").get_dataset("rating")
+    # FT_Dataset("").get_dataset("summarization")
+    FT_Dataset("").get_dataset("transliteration")
+    # FT_Dataset("").get_dataset("translation")
