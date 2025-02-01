@@ -1,7 +1,7 @@
 from huggingface_hub import login
 from datasets import load_dataset
  
-login(token="<HUGGING_FACE_API_TOKEN>")
+login(token="token")
 
 dataset_names = {
     "sentiment_train":"ajgt_twitter_ar",
@@ -19,17 +19,16 @@ dataset_names = {
     "summarization_train":"arbml/easc",
     "summarization_test":"arbml/easc",
 
-    "translation_train":"aishaalansari/translation",
-    "translation_test":"aishaalansari/translation",
+    # "translation_train":"aishaalansari/translation",
+    # "translation_test":"aishaalansari/translation",
 
-    "paraphrasing_train": "aishaalansari/paraphrase" ,
-    "paraphrasing_test": "aishaalansari/Paraphrasing",
+    "paraphrasing_train": "aishaalansari/paraphrase",
 
     "transliteration_train": "aishaalansari/Transliteration_ANETAC",
     "transliteration_test": "aishaalansari/Transliteration_ANETAC",
 
-    "GQA_train": "asas-ai/tydiqa-goldp-ar",
-    "GQA_test": "asas-ai/tydiqa-goldp-ar",
+    # "GQA_train": "asas-ai/tydiqa-goldp-ar",
+    # "GQA_test": "asas-ai/tydiqa-goldp-ar",
 }
 
 dataset_splits = {

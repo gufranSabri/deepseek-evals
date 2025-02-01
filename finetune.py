@@ -11,7 +11,6 @@ import os
 import argparse
 import torch
 
-from unsloth import FastLanguageModel
 from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
@@ -67,7 +66,7 @@ def finetune(args):
             weight_decay=0.01,
             lr_scheduler_type="linear",
             seed=seed,
-            output_dir="outputs",
+            output_dir=f"./outputs/{args.model}_{args.task}_{args.prompt_lang}",
         ),
     )
 

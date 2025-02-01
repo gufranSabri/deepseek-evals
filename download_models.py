@@ -9,7 +9,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from utils import *
 
 deepseek_models = {
-    # "R1":"unsloth/DeepSeek-R1",
+    "R1":"unsloth/DeepSeek-R1",
     "L8B":"unsloth/DeepSeek-R1-Distill-Llama-8B",
     "L70B":"unsloth/DeepSeek-R1-Distill-Llama-70B",
     "Q1.5B":"unsloth/DeepSeek-R1-Distill-Qwen-1.5B",

@@ -3,9 +3,6 @@ import os
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from datasets import load_dataset
-from unsloth import FastLanguageModel
-
 class Logger:
     def __init__(self, file_path):
         if not os.path.exists("/".join(file_path.split("/")[:-1])):

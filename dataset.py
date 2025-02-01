@@ -9,13 +9,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from huggingface_hub import login
 from datasets import load_dataset
- 
-from datasets import load_dataset
-from unsloth import FastLanguageModel
 
 class FT_Dataset:
     def __init__(self, EOS_TOKEN, split="train", logger = None):
-        login(token="<HUGGING_FACE_API_TOKEN>")
+        login(token="token")
 
         self.EOS_TOKEN = EOS_TOKEN
         self.split = split
@@ -309,7 +306,7 @@ class FT_Dataset:
             self.prompt_template += "\n"
             self.prompt_template += f"### Question:\n"
             self.prompt_template += "{}"
-            self.prompt_template += "\n"
+            self.prompt_template += "\n\n"
             self.prompt_template += f"### Response:\n"
             self.prompt_template += "{}"
 
@@ -323,7 +320,7 @@ class FT_Dataset:
             self.prompt_template += "\n"
             self.prompt_template += ":سؤال" + "###" + "\n"
             self.prompt_template += "{}"
-            self.prompt_template += "\n"
+            self.prompt_template += "\n\n"
             self.prompt_template += ":إجابة" + "###" + "\n"
             self.prompt_template += "{}"
 
