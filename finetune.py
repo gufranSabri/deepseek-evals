@@ -34,22 +34,22 @@ def finetune(args):
     model, tokenizer = DeepSeek_FT_Models(args.model).get_model(args)
 
     # DATASET PREP
-    dataset_helper_train = FT_Dataset(tokenizer.eos_token, split="train", logger=logger)
-    dataset_train = dataset_helper_train.get_dataset(args.task, args.prompt_lang)
-    dataset_size_train = dataset_helper_train.get_size()
+    dataset_helper = FT_Dataset(tokenizer.eos_token, split="train", logger=logger)
+    dataset = dataset_helper.get_dataset(args.task, args.prompt_lang)
+    dataset_size = dataset_helper.get_size()
 
     # TRAIN
-    max_steps = min(int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps)), args.max_steps)
+    max_steps = min(int((args.epochs * dataset_size)/(args.batch_size * args.gradient_accumulation_steps)), args.max_steps)
     
     logger("======================================================")
     logger("STARTING TRAINING")
-    logger(f"Dataset size: {dataset_size_train}")
+    logger(f"Dataset size: {dataset_size}")
     logger(f"Max Steps: {max_steps}")
-    logger(f"Total possible steps: {int((args.epochs * dataset_size_train)/(args.batch_size * args.gradient_accumulation_steps))}")
+    logger(f"Total possible steps: {int((args.epochs * dataset_size)/(args.batch_size * args.gradient_accumulation_steps))}")
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
-        train_dataset=dataset_train,
+        train_dataset=dataset,
         dataset_text_field="text",
         max_seq_length=args.max_seq_length,
         dataset_num_proc=2,
@@ -95,7 +95,7 @@ def finetune(args):
     # FastLanguageModel.for_inference(model)
     # questions = ["هذا المطعم سيء جدا", "خدمة الفندق غير جيدة", "خدمة المطعم ممتازة"]
     # for q in questions:
-    #     inputs = tokenizer([dataset_helper_train.prompt_template.format(q, "")], return_tensors="pt").to("cuda")
+    #     inputs = tokenizer([dataset_helper.prompt_template.format(q, "")], return_tensors="pt").to("cuda")
     #     outputs = model.generate(
     #         input_ids=inputs.input_ids,
     #         attention_mask=inputs.attention_mask,

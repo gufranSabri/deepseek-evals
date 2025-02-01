@@ -11,12 +11,13 @@ from huggingface_hub import login
 from datasets import load_dataset
 
 class FT_Dataset:
-    def __init__(self, EOS_TOKEN, split="train", logger = None):
+    def __init__(self, EOS_TOKEN, split="train", logger = None, test_mode=False):
         login(token="token")
 
-        self.EOS_TOKEN = EOS_TOKEN
+        self.EOS_TOKEN = "" if test_mode else EOS_TOKEN
         self.split = split
         self.logger = logger
+        self.test_mode = test_mode
 
         self.dataset_names = {
             "sentiment_train":"ajgt_twitter_ar",
@@ -40,8 +41,8 @@ class FT_Dataset:
             "paraphrasing_train": "aishaalansari/paraphrase" ,
             "paraphrasing_test": "aishaalansari/Paraphrasing",
 
-            "transliteration_train": "aishaalansari/Transliteration_ANETAC",
-            "transliteration_test": "aishaalansari/Transliteration_ANETAC",
+            "transliteration_train": "aishaalansari/Transliteration_NEW",
+            "transliteration_test": "aishaalansari/Transliteration_NEW",
 
             "GQA_train": "asas-ai/tydiqa-goldp-ar",
             "GQA_test": "asas-ai/tydiqa-goldp-ar",
@@ -147,7 +148,7 @@ class FT_Dataset:
         }
 
         self.task_instructions_ar = {
-            "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى وحدد ما إذا كانت مشاعره إيجابية أم سلبية.",
+            "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى و اجب 1 إذا كانت مشاعره إيجابية و 0 إذا كانت مشاعره سلبية.",
             "diacratization": "أنت خبير في علم اللغة والنحو العربي. إذا كان النص العربي بدون علامات تشكيل، قم باستعادة علامات التشكيل المفقودة بدقة.",
             "mcq": "أنت مدرس متقدم في مجال الذكاء الاصطناعي يتمتع بخبرة في اسئلة الاختيار من متعدد. قم بتحليل السؤال والخيارات المقدمة بعناية، ثم حدد الإجابة الصحيحة.",
             "pos_tagging": '["NOUN"، "PUNCT"، "ADP"، "NUM"، "SYM"، "SCONJ"، "ADJ"، "PART"، "DET"، "CCONJ"، "PROPN"، "PRON"، "X"، "ADV"، "INTJ"، "VERB"، "AUX"] أنت عالم لغوي حاسوبي متخصص في التحليل النحوي. إذا كان لديك جملة، حدد النوع الصرفي لكل كلمة من الكلمات. خياراتك هي',
@@ -170,7 +171,7 @@ class FT_Dataset:
         texts = []
 
         for text, label in zip(inputs, outputs):
-            text = self.prompt_template.format(text, label) + self.EOS_TOKEN
+            text = self.prompt_template.format(text, label if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -181,7 +182,7 @@ class FT_Dataset:
         texts = []
 
         for text, diacratized in zip(inputs, outputs):
-            text = self.prompt_template.format(text, diacratized) + self.EOS_TOKEN
+            text = self.prompt_template.format(text, diacratized if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -193,7 +194,7 @@ class FT_Dataset:
         texts = []
 
         for question, a, b, c, d, answer in zip(question, A, B, C, D, answers):
-            text = self.prompt_template.format(question+"\n"+a+"\n"+b+"\n"+c+"\n"+d, answer) + self.EOS_TOKEN
+            text = self.prompt_template.format(question+"\n"+a+"\n"+b+"\n"+c+"\n"+d, answer if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
 
         return {"text": texts}
@@ -219,7 +220,7 @@ class FT_Dataset:
             tokenized_sents[i] = " ".join(tokenized_sents[i])
 
         for inp, output in zip(tokenized_sents, outputs):
-            text = self.prompt_template.format(inp, output) + self.EOS_TOKEN
+            text = self.prompt_template.format(inp, output if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
 
         return {"text": texts}
@@ -234,7 +235,7 @@ class FT_Dataset:
         texts = []
 
         for article, summary in zip(articles, summaries):
-            text = self.prompt_template.format(article, summary) + self.EOS_TOKEN
+            text = self.prompt_template.format(article, summary if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -245,7 +246,7 @@ class FT_Dataset:
         texts = []
 
         for sourceString, targetString in zip(sourceStrings, targetStrings):
-            text = self.prompt_template.format(sourceString, targetString) + self.EOS_TOKEN
+            text = self.prompt_template.format(sourceString, targetString if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -265,21 +266,19 @@ class FT_Dataset:
 
         texts = []
         for sent, para in zip(sentences, paraphrases):
-            text = self.prompt_template.format(sent, para) + self.EOS_TOKEN
+            text = self.prompt_template.format(sent, para if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
 
     
     def format_prompt_transliteration(self,data):
-        num_rows = len(data["text"])
-
-        EN = data["text"][:(num_rows//2)]
-        AR = data["text"][num_rows//2:]
+        EN = data["English"]
+        AR = data["Arabic"]
+        
         texts = []
- 
         for en, ar in zip(EN, AR):
-            text = self.prompt_template.format(en, ar) + self.EOS_TOKEN
+            text = self.prompt_template.format(en, ar if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -290,7 +289,7 @@ class FT_Dataset:
         texts = []
  
         for q, a in zip(question, answer):
-            text = self.prompt_template.format(q, a["text"]) + self.EOS_TOKEN
+            text = self.prompt_template.format(q, a["text"] if not self.test_mode else "") + self.EOS_TOKEN
             texts.append(text)
         
         return {"text": texts}
@@ -325,12 +324,14 @@ class FT_Dataset:
             self.prompt_template += "{}"
 
         else:
-            self.logger(lang + " not supported")
+            if self.logger is not None:
+                self.logger(lang + " not supported")
             exit()
 
-        self.logger("PROMPT:")
-        self.logger(self.prompt_template)
-        self.logger("\n\n")
+        if self.logger is not None:
+            self.logger("PROMPT:")
+            self.logger(self.prompt_template)
+            self.logger("\n\n")
 
     def get_dataset(self, task, lang="en"):
         self.construct_prompt(task, lang)
@@ -358,24 +359,25 @@ class FT_Dataset:
         self.size = dataset.num_rows
         dataset = dataset.map(self.prompt_func_map[task_split], batched = True)
 
-        self.logger("\n\n")
-        self.logger("DATASET SUMMARY:")
-        self.logger(str(dataset))
-        self.logger("\n\n")
+        if self.logger is not None:
+            self.logger("\n\n")
+            self.logger("DATASET SUMMARY:")
+            self.logger(str(dataset))
+            self.logger("\n\n")
 
-        self.logger("EXAMPLE DATA INSTANCE:")
-        self.logger(dataset["text"][-1])
-        self.logger("\n\n")
+            self.logger("EXAMPLE DATA INSTANCE:")
+            self.logger(dataset["text"][-1])
+            self.logger("\n\n")
 
         return dataset
 
 
 if __name__ == "__main__":
-    # FT_Dataset("").get_dataset("sentiment")
-    # FT_Dataset("").get_dataset("diacratization")
-    # FT_Dataset("").get_dataset("mcq")
-    # FT_Dataset("").get_dataset("pos_tagging")
-    # FT_Dataset("").get_dataset("rating")
-    # FT_Dataset("").get_dataset("summarization")
+    FT_Dataset("").get_dataset("sentiment")
+    FT_Dataset("").get_dataset("diacratization")
+    FT_Dataset("").get_dataset("mcq")
+    FT_Dataset("").get_dataset("pos_tagging")
+    FT_Dataset("").get_dataset("rating")
+    FT_Dataset("").get_dataset("summarization")
     FT_Dataset("").get_dataset("transliteration")
-    # FT_Dataset("").get_dataset("translation")
+    FT_Dataset("").get_dataset("translation")

@@ -7,25 +7,25 @@ dataset_names = {
     "sentiment_train":"ajgt_twitter_ar",
     "sentiment_test":"ajgt_twitter_ar",
 
-    "diacratization_train":"arbml/tashkeelav2",
-    "diacratization_test":"arbml/tashkeelav2",
+    # "diacratization_train":"arbml/tashkeelav2",
+    # "diacratization_test":"arbml/tashkeelav2",
 
-    "mcq_train":"aishaalansari/CIDAR100",
-    "mcq_test":"aishaalansari/CIDAR100",
+    # "mcq_train":"aishaalansari/CIDAR100",
+    # "mcq_test":"aishaalansari/CIDAR100",
 
-    "pos_tagging_train":"universal_dependencies",
-    "pos_tagging_test":"universal_dependencies",
+    # "pos_tagging_train":"universal_dependencies",
+    # "pos_tagging_test":"universal_dependencies",
 
-    "summarization_train":"arbml/easc",
-    "summarization_test":"arbml/easc",
+    # "summarization_train":"arbml/easc",
+    # "summarization_test":"arbml/easc",
 
     # "translation_train":"aishaalansari/translation",
     # "translation_test":"aishaalansari/translation",
 
-    "paraphrasing_train": "aishaalansari/paraphrase",
+    # "paraphrasing_train": "aishaalansari/paraphrase",
 
-    "transliteration_train": "aishaalansari/Transliteration_ANETAC",
-    "transliteration_test": "aishaalansari/Transliteration_ANETAC",
+    # "transliteration_train": "aishaalansari/Transliteration_NEW",
+    # "transliteration_test": "aishaalansari/Transliteration_NEW",
 
     # "GQA_train": "asas-ai/tydiqa-goldp-ar",
     # "GQA_test": "asas-ai/tydiqa-goldp-ar",
@@ -92,7 +92,7 @@ subset_names = {
 for key in dataset_names.keys():
     print(key)
     dataset = load_dataset(dataset_names[key], subset_names[key], split=dataset_splits[key])
-    print(dataset)
+    print(set(dataset["label"]))
     print()
 
 
