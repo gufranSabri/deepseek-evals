@@ -64,7 +64,7 @@ def finetune(args):
             logging_steps=10,
             optim="adamw_8bit",
             weight_decay=0.01,
-            lr_scheduler_type="linear",
+            lr_scheduler_type="cosine",
             seed=seed,
             output_dir=f"./outputs/{args.model}_{args.task}_{args.prompt_lang}",
         ),
@@ -91,6 +91,8 @@ def finetune(args):
     tokenizer.save_pretrained(model_path)
     model.save_pretrained_merged(model_path, tokenizer, save_method = "merged_16bit")
 
+    
+
     # # TEST
     # FastLanguageModel.for_inference(model)
     # questions = ["هذا المطعم سيء جدا", "خدمة الفندق غير جيدة", "خدمة المطعم ممتازة"]
@@ -116,8 +118,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
-    parser.add_argument('--epochs', dest='epochs', default='1')
-    parser.add_argument('--max_steps', dest='max_steps', default='50000')
+    parser.add_argument('--epochs', dest='epochs', default='2')
+    parser.add_argument('--max_steps', dest='max_steps', default='100000')
     args=parser.parse_args()
 
     args.rank = int(args.rank)

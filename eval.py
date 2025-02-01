@@ -18,10 +18,16 @@ from unsloth import is_bfloat16_supported
 
 from model import DeepSeek_FT_Models
 from dataset import FT_Dataset
-from utils import Logger
+from utils import Logger, calculate_diacritization_score
 from unsloth import FastLanguageModel
 
 from tqdm import tqdm
+from sklearn.metrics import accuracy_score
+
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+
+from rouge import Rouge
+from diacritization_evaluation import wer, der
 
 
 class Eval:
@@ -34,36 +40,7 @@ class Eval:
         self.load_model()
         self.load_data()
 
-        if not os.path.exists("./preds"):
-            os.mkdir("./preds")
-
         self.preds_file_path = os.path.join("./preds", "_".join([self.model_name, self.task, self.prompt_lang]))
-        if os.path.exists(self.preds_file_path):
-            shutil.rmtree(self.preds_file_path)
-
-        os.mkdir(self.preds_file_path)
-
-    def generate_predictions(self):
-        for i, prompt in enumerate(self.dataset["text"]):
-            inputs = self.tokenizer([prompt], return_tensors="pt").to("cuda")
-            outputs = self.model.generate(
-                input_ids=inputs.input_ids,
-                attention_mask=inputs.attention_mask,
-                max_new_tokens=1200,
-                use_cache=True,
-            )
-            response = self.tokenizer.batch_decode(outputs)
-
-            logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
-            logger(response[0].replace(self.tokenizer.eos_token, ""))
-
-            if i == 10: break
-
-    def load_data(self):
-        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="test", test_mode=True)
-        self.dataset = self.dataset_helper.get_dataset(self.task, self.CONFIGS["PROMPT_LANG"])
-        self.dataset_size = self.dataset_helper.get_size()
-
 
     def read_congifs(self):
         CONFIGS = {
@@ -92,6 +69,17 @@ class Eval:
                 break
 
         self.CONFIGS = CONFIGS
+
+    def load_data(self):
+        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="test")
+        self.dataset = self.dataset_helper.get_dataset(self.task, self.CONFIGS["PROMPT_LANG"])
+        self.dataset_size = self.dataset_helper.get_size()
+
+        self.answers = list(self.dataset["text"])
+
+        for i in range(len(self.answers)):
+            self.answers[i] = self.answers[i].split(":إجابة###")[1]
+            # if i == 10: break
 
     def load_model(self):
         file_name = "_".join([self.model_name, self.task, self.prompt_lang])
@@ -137,32 +125,235 @@ class Eval:
 
         base_model, tokenizer = FastLanguageModel.from_pretrained(
             model_name=base_model_path,
-            max_seq_length=self.CONFIGS["MAX_SEQ_LENGTH"],
-            load_in_4bit=self.CONFIGS["LOAD_4BIT"] == 1,
+            max_seq_length=2048,
+            load_in_4bit=True,
         )
 
-        # base_model.load_adapter(lora_adapter_path)
         FastLanguageModel.for_inference(base_model)
 
         self.tokenizer = tokenizer
         self.model = base_model
 
+    def get_preds(self):
+        preds_folder = "_".join([self.model_name, self.task, self.prompt_lang])
+        preds_dir = os.path.join("./preds", preds_folder)
+
+        txt_files = os.listdir(preds_dir)
+        txt_files = sorted(txt_files, key=lambda x: int(x.split('.')[0]))
+
+        preds = []
+        for i in range(len(txt_files)):
+            with open(os.path.join(preds_dir, txt_files[i])) as pred_file:
+                pred = pred_file.readlines()
+
+            preds.append(pred)
+
+        self.preds = preds
+
+    def evaluate(self):
+        if self.task == "sentiment":
+            return self.evaluate_sentiment()
+
+        if self.task == "pos_tagging":
+            return self.evaluate_pos_tagging()
+
+        if self.task == "paraphrasing":
+            return self.evaluate_paraphrasing()
+
+        if self.task == "summarization":
+            return self.evaluate_summarization()
+        
+        if self.task == "transliteration":
+            return self.evaluate_transliteration()
+
+        if self.task == "diacratization":
+            return self.evaluate_diacratization()
+
+        if self.task == "translation":
+            return self.evaluate_translation()
+
+
+    def evaluate_sentiment(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1][0]
+
+        for i in range(len(self.answers)):
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        accuracy = accuracy_score(self.preds, self.answers)
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Accuracy: {accuracy}")
+
+        return accuracy
+
+    def evaluate_pos_tagging(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        total = 0
+        correct = 0
+        for i in range(len(self.preds)):
+            pred = self.preds[i]
+            answer = self.answers[i].split("\n")
+
+            pred = pred[1:-1]
+            answer = answer[1:-1]
+            pred = [p.replace("\n", "") for p in pred]
+
+            pred_tags = [token.split(":")[-1] for token in pred if ":" in token]
+            true_tags = [token.split(":")[-1] for token in answer if ":" in token]
+
+            total += len(true_tags)
+            correct += sum(p == t for p, t in zip(pred_tags, true_tags))
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Accuracy: {correct / total if total > 0 else 0.0}")
+
+        return correct / total if total > 0 else 0.0
+
+    def evaluate_paraphrasing(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1].replace("\n", "")
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        smooth_fn = SmoothingFunction().method1
+
+        bleu_scores = []
+        for reference, candidate in zip(self.answers, self.preds):
+            bleu_score = sentence_bleu([reference], candidate, smoothing_function=smooth_fn)
+            bleu_scores.append(bleu_score)
+
+        average_bleu_score = sum(bleu_scores) / len(bleu_scores) if bleu_scores else 0
+        
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Average BLEU score: {average_bleu_score:.4f}")
+
+        return average_bleu_score
+        
+    def evaluate_summarization(self):
+        rouge = Rouge()
+
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1].replace("\n", "")
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        abstractive_rouge_1_scores = []
+        abstractive_rouge_2_scores = []
+        abstractive_rouge_l_scores = []
+        for g_text, t_text in zip(self.preds, self.answers):
+            scores = rouge.get_scores(g_text, t_text)[0]
+            abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
+            abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
+            abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
+
+        avg_abstractive_rouge_1 = sum(abstractive_rouge_1_scores) / len(abstractive_rouge_1_scores) if abstractive_rouge_1_scores else 0
+        avg_abstractive_rouge_2 = sum(abstractive_rouge_2_scores) / len(abstractive_rouge_2_scores) if abstractive_rouge_2_scores else 0
+        avg_abstractive_rouge_l = sum(abstractive_rouge_l_scores) / len(abstractive_rouge_l_scores) if abstractive_rouge_l_scores else 0
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"ROUGE-1: {avg_abstractive_rouge_1}")
+        logger(f"ROUGE-2: {avg_abstractive_rouge_2}")
+        logger(f"ROUGE-L: {avg_abstractive_rouge_l}")
+
+        return avg_abstractive_rouge_1, avg_abstractive_rouge_2, avg_abstractive_rouge_l
+
+    def evaluate_transliteration(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = list(self.preds[i][1].replace("\n", ""))
+            self.answers[i] = list(self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, ""))
+
+        smooth_fn = SmoothingFunction().method1
+
+        bleu_scores = []
+        for reference, candidate in zip(self.answers, self.preds):
+            bleu_score = sentence_bleu([reference], candidate, smoothing_function=smooth_fn)
+            bleu_scores.append(bleu_score)
+
+        average_bleu_score = sum(bleu_scores) / len(bleu_scores) if bleu_scores else 0
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Average BLEU score: {average_bleu_score:.4f}")
+
+        return average_bleu_score
+
+    def evaluate_translation(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1].replace("\n", "")
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        smooth_fn = SmoothingFunction().method1
+
+        bleu_scores = []
+        for reference, candidate in zip(self.answers, self.preds):
+            bleu_score = sentence_bleu([reference], candidate, smoothing_function=smooth_fn)
+            bleu_scores.append(bleu_score)
+
+        average_bleu_score = sum(bleu_scores) / len(bleu_scores) if bleu_scores else 0
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Average BLEU score: {average_bleu_score:.4f}")
+
+        return average_bleu_score
+
+    def evaluate_diacratization(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1].replace("\n", "")
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        der, wer, der_no_ce, wer_no_ce, total = 0, 0, 0, 0, 0
+        for original_text, predicted_text in zip(self.answers, self.preds):
+            d, w, dce, wce = calculate_diacritization_score(predicted_text, original_text)
+            der += d
+            wer += w
+            dce += dce
+            wce += wce
+
+            total += 1
+
+        der /= total
+        wer /= total
+        dce /= total
+        wce /= total
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"DER: {der}")
+        logger(f"WER: {wer}")
+        logger(f"DCE: {dce}")
+        logger(f"WCE: {wce}")
+
+        return der, wer, der_no_ce, wer_no_ce
         
 if __name__ == "__main__":
-    e = Eval("sentiment")
-    e.generate_predictions()
 
-    e = Eval("pos_tagging")
-    e.generate_predictions()
+    parser=argparse.ArgumentParser()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
+    parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
+    parser.add_argument('--task',dest='task', default='sentiment')
+    args=parser.parse_args()
 
-    e = Eval("paraphrasing")
-    e.generate_predictions()
+    assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
+    assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
+    assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
-    e = Eval("summarization")
-    e.generate_predictions()
-
-    e = Eval("transliteration")
-    e.generate_predictions()
-
-    e = Eval("diacratization")
-    e.generate_predictions()
+    e = Eval(args.task, args.model, args.prompt_lang)
+    e.evaluate()

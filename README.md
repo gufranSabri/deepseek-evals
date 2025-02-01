@@ -56,4 +56,37 @@ python finetune.py --model Q1.5B --task sentiment --prompt_lang ar --rank 4 --lo
 - <b>epochs</b><br>
 -- description: The number of epochs.<br>
 
+## Inference
+```
+python generate.py --model Q1.5B --task sentiment --prompt_lang ar
+```
+
+- <b>model</b><br>
+-- options: ['L8B', 'L70B', 'Q1.5B', 'Q7B', 'Q14B', 'Q32B']<br>
+-- description: The model to be fine-tuned.<br>
+
+- <b>task</b><br>
+-- options: ['sentiment', 'diacratization', 'mcq', 'pos_tagging', 'summarization', 'translation', 'transliteration']<br>
+-- description: Which NLP task to train on.<br>
+
+- <b>prompt_lang</b><br>
+-- options: ['ar', 'en']<br>
+-- description: The language of the prompt.<br>
+
 ## Evaluation
+
+```
+python eval.py --model Q1.5B --task sentiment --prompt_lang ar
+```
+
+- <b>model</b><br>
+-- options: ['L8B', 'L70B', 'Q1.5B', 'Q7B', 'Q14B', 'Q32B']<br>
+-- description: The model to be fine-tuned.<br>
+
+- <b>task</b><br>
+-- options: ['sentiment', 'diacratization', 'mcq', 'pos_tagging', 'summarization', 'translation', 'transliteration']<br>
+-- description: Which NLP task to train on.<br>
+
+- <b>prompt_lang</b><br>
+-- options: ['ar', 'en']<br>
+-- description: The language of the prompt.<br>
