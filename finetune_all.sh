@@ -1,5 +1,3 @@
-#taqyim datasets - ordered on basis of size
-
 CUDA_VISIBLE_DEVICES=0 python finetune.py --task sentiment
 CUDA_VISIBLE_DEVICES=0 python generate.py --task sentiment
 CUDA_VISIBLE_DEVICES=0 python eval.py --task sentiment
@@ -20,11 +18,10 @@ CUDA_VISIBLE_DEVICES=0 python finetune.py --task transliteration
 CUDA_VISIBLE_DEVICES=0 python generate.py --task transliteration
 CUDA_VISIBLE_DEVICES=0 python eval.py --task transliteration
 
-# CUDA_VISIBLE_DEVICES=1 python finetune.py --task diacratization
-# CUDA_VISIBLE_DEVICES=1 python generate.py --task diacratization
-# CUDA_VISIBLE_DEVICES=1 python eval.py --task diacratization
-# python finetune.py --task translation
+CUDA_VISIBLE_DEVICES=0 python finetune.py --task translation
+CUDA_VISIBLE_DEVICES=0 python generate.py --task translation
+CUDA_VISIBLE_DEVICES=0 python eval.py --task translation
 
-# =================================
-# python finetune.py --task mcq
-# python finetune.py --task GQA
+# CUDA_VISIBLE_DEVICES=0 python finetune.py --task diacratization
+# CUDA_VISIBLE_DEVICES=0 python generate.py --task diacratization
+# CUDA_VISIBLE_DEVICES=0 python eval.py --task diacratization

@@ -91,23 +91,6 @@ def finetune(args):
     tokenizer.save_pretrained(model_path)
     model.save_pretrained_merged(model_path, tokenizer, save_method = "merged_16bit")
 
-    
-
-    # # TEST
-    # FastLanguageModel.for_inference(model)
-    # questions = ["هذا المطعم سيء جدا", "خدمة الفندق غير جيدة", "خدمة المطعم ممتازة"]
-    # for q in questions:
-    #     inputs = tokenizer([dataset_helper.prompt_template.format(q, "")], return_tensors="pt").to("cuda")
-    #     outputs = model.generate(
-    #         input_ids=inputs.input_ids,
-    #         attention_mask=inputs.attention_mask,
-    #         max_new_tokens=1200,
-    #         use_cache=True,
-    #     )
-    #     response = tokenizer.batch_decode(outputs)
-    #     print(response[0].split(":إجابة###")[-1].replace(tokenizer.eos_token, ""))
-
-
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
@@ -151,4 +134,3 @@ if __name__ == '__main__':
     except Exception as e:
         logger(e)
         logger("\n\n")
-        

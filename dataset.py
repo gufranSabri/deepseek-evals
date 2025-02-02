@@ -35,8 +35,8 @@ class FT_Dataset:
             "summarization_train":"./data/arabic.pkl",
             "summarization_test":"arbml/easc",
 
-            "translation_train":"Zaid/tmp-translation",
-            "translation_test":"Zaid/tmp-translation",
+            "translation_train":"./data/translation_train.csv",
+            "translation_test":"./data/translation_test.csv",
 
             "paraphrasing_train": "aishaalansari/paraphrase" ,
             "paraphrasing_test": "aishaalansari/Paraphrasing",
@@ -337,6 +337,10 @@ class FT_Dataset:
         self.construct_prompt(task, lang)
 
         task_split = task + "_" + self.split
+
+        if os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".csv"):
+            df = pd.read_csv(self.dataset_names[task_split])
+            dataset = Dataset.from_pandas(df)
         if os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".pkl"):
             with open(self.dataset_names[task_split], 'rb') as pickle_file:
                 arabic_docs=pickle.load(pickle_file)
