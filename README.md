@@ -14,6 +14,8 @@ pip install tqdm
 pip install transformers
 ```
 
+## Data-Prep
+Please review the dataset.py file
 
 ## Fine-tuning
 To fine-tune the distilled models on the Arabic NLP tasks, you can use the following command:
