@@ -16,7 +16,7 @@ from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
 
-from model import DeepSeek_FT_Models
+from model import FT_Models
 from dataset import FT_Dataset
 from utils import Logger
 from unsloth import FastLanguageModel
@@ -155,7 +155,7 @@ class Gen:
 if __name__ == "__main__":
     parser=argparse.ArgumentParser()
     parser=argparse.ArgumentParser()
-    parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
+    # parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
     parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
     parser.add_argument('--task',dest='task', default='sentiment')
     args=parser.parse_args()

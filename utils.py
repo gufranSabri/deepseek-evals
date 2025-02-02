@@ -80,5 +80,3 @@ def calculate_diacritization_score(predicted, expected):
         case_ending=False,
     )
     return der_, wer_, der_no_ce, wer_no_ce
-
-

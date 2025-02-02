@@ -335,13 +335,12 @@ class FT_Dataset:
 
     def get_dataset(self, task, lang="en"):
         self.construct_prompt(task, lang)
-
         task_split = task + "_" + self.split
 
         if os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".csv"):
-            df = pd.read_csv(self.dataset_names[task_split])
-            dataset = Dataset.from_pandas(df)
-        if os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".pkl"):
+            dataset = load_dataset("csv", data_files=self.dataset_names[task_split])["train"]
+
+        elif os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".pkl"):
             with open(self.dataset_names[task_split], 'rb') as pickle_file:
                 arabic_docs=pickle.load(pickle_file)
 
@@ -355,6 +354,7 @@ class FT_Dataset:
 
             df = pd.DataFrame(flat_data)
             dataset = Dataset.from_pandas(df)
+
         else:
             dataset_name = self.dataset_names[task_split]
             subset_name = self.subset_names[task_split]
@@ -362,6 +362,9 @@ class FT_Dataset:
 
         self.size = dataset.num_rows
         dataset = dataset.map(self.prompt_func_map[task_split], batched = True)
+        
+        if self.split == "train":
+            dataset = dataset.shuffle(seed=42)
 
         if self.logger is not None:
             self.logger("\n\n")

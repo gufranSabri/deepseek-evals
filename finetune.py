@@ -15,11 +15,11 @@ from trl import SFTTrainer
 from transformers import TrainingArguments
 from unsloth import is_bfloat16_supported
 
-from model import DeepSeek_FT_Models
+from model import FT_Models
 from dataset import FT_Dataset
 from utils import Logger
 
-def finetune(args):
+def finetune(args, logger):
     # SEED STUFF
     seed = 42
     random.seed(seed)
@@ -31,7 +31,7 @@ def finetune(args):
     torch.backends.cudnn.benchmark=False
 
     # MODEL AND TOKENIZER
-    model, tokenizer = DeepSeek_FT_Models(args.model).get_model(args)
+    model, tokenizer = FT_Models(args.model, logger=logger).get_model(args)
 
     # DATASET PREP
     dataset_helper = FT_Dataset(tokenizer.eos_token, split="train", logger=logger)
@@ -93,7 +93,7 @@ def finetune(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
-    parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
+    parser.add_argument('--model',dest='model', default='R1-Q1.5B')
     parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
     parser.add_argument('--task',dest='task', default='sentiment')
     parser.add_argument('--rank',dest='rank', default='4', help='4, 8, 16')
@@ -101,8 +101,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
-    parser.add_argument('--epochs', dest='epochs', default='2')
-    parser.add_argument('--max_steps', dest='max_steps', default='100000')
+    parser.add_argument('--epochs', dest='epochs', default='1')
+    parser.add_argument('--max_steps', dest='max_steps', default='10000')
     args=parser.parse_args()
 
     args.rank = int(args.rank)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     args.epochs = int(args.epochs)
     args.max_steps = int(args.max_steps)
 
-    assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
+    # assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
     assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
@@ -129,8 +129,8 @@ if __name__ == '__main__':
         logger(f"{arg.upper()}: {value}")
     logger("\n\n======================================================")
 
-    try:
-        finetune(args)
-    except Exception as e:
-        logger(e)
-        logger("\n\n")
+    # try:
+    finetune(args, logger)
+    # except Exception as e:
+    #     logger(e)
+    #     logger("\n\n")
