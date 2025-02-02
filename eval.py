@@ -346,12 +346,12 @@ if __name__ == "__main__":
 
     parser=argparse.ArgumentParser()
     parser=argparse.ArgumentParser()
-    # parser.add_argument('--model',dest='model', default='Q1.5B', help='L8B, L70B, Q1.5B, Q7B, Q14B, Q32B')
+    parser.add_argument('--model',dest='model')
     parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
     parser.add_argument('--task',dest='task', default='sentiment')
     args=parser.parse_args()
 
-    assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
+    # assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
     assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 

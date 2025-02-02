@@ -12,12 +12,12 @@ class FT_Models:
         self.logger = logger
 
         self.models = {
-            "R1-Q1.5B":"unsloth/DeepSeek-R1-Distill-Qwen-1.5B",
-            "R1-Q7B":"unsloth/DeepSeek-R1-Distill-Qwen-7B",
-            "R1":"unsloth/DeepSeek-R1",
-            "R1-L8B":"unsloth/DeepSeek-R1-Distill-Llama-8B",
+            "R1-Q1.5B": "unsloth/DeepSeek-R1-Distill-Qwen-1.5B",
+            "R1-Q7B": "unsloth/DeepSeek-R1-Distill-Qwen-7B",
+            "R1": "unsloth/DeepSeek-R1",
+            "R1-L8B": "unsloth/DeepSeek-R1-Distill-Llama-8B",
             
-            "Q2.5-0.5B":"unsloth/Qwen2.5-0.5B",
+            "Q2.5-0.5B": "unsloth/Qwen2.5-0.5B",
             "Q2.5-1.5B": "unsloth/Qwen2.5-1.5B",
             "Q2.5-7B": "unsloth/Qwen2.5-7B",
 
