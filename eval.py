@@ -279,36 +279,6 @@ class Eval:
         return avg_abstractive_rouge_1, avg_abstractive_rouge_2, avg_abstractive_rouge_l
 
 
-    def evaluate_transliteration(self):
-        self.get_preds()
-        self.answers = self.answers[:len(self.preds)]
-
-        for i in range(len(self.preds)):
-            self.preds[i] = list(self.preds[i][1].replace("\n", ""))
-            self.answers[i] = list(self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, ""))
-
-        # Compute Sentence-Level BLEU
-        bleu = sacrebleu.BLEU(effective_order=True)
-        sentence_bleu_scores = [bleu.sentence_score(candidate, [reference]).score
-                                for reference, candidate in zip(self.answers, self.preds)]
-
-        # Compute Corpus-Level BLEU
-        corpus_bleu_score = bleu.corpus_score(self.preds, [self.answers]).score
-
-        # Compute Average Sentence-Level BLEU
-        avg_sentence_bleu_score = sum(sentence_bleu_scores) / len(sentence_bleu_scores) if sentence_bleu_scores else 0
-
-        # Log the scores
-        logger = Logger(os.path.join(self.preds_file_path, "scores.txt"))
-        logger(f"Average Sentence BLEU score: {avg_sentence_bleu_score:.4f}")
-        logger(f"Corpus BLEU score: {corpus_bleu_score:.4f}")
-
-        return {
-            "average_sentence_bleu": avg_sentence_bleu_score,
-            "corpus_bleu": corpus_bleu_score
-        }
-
-
     # def evaluate_transliteration(self):
     #     self.get_preds()
     #     self.answers = self.answers[:len(self.preds)]
@@ -317,19 +287,49 @@ class Eval:
     #         self.preds[i] = list(self.preds[i][1].replace("\n", ""))
     #         self.answers[i] = list(self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, ""))
 
-    #     smooth_fn = SmoothingFunction().method1
+    #     # Compute Sentence-Level BLEU
+    #     bleu = sacrebleu.BLEU(effective_order=True)
+    #     sentence_bleu_scores = [bleu.sentence_score(candidate, [reference]).score
+    #                             for reference, candidate in zip(self.answers, self.preds)]
 
-    #     bleu_scores = []
-    #     for reference, candidate in zip(self.answers, self.preds):
-    #         bleu_score = sentence_bleu([reference], candidate, smoothing_function=smooth_fn)
-    #         bleu_scores.append(bleu_score)
+    #     # Compute Corpus-Level BLEU
+    #     corpus_bleu_score = bleu.corpus_score(self.preds, [self.answers]).score
 
-    #     average_bleu_score = sum(bleu_scores) / len(bleu_scores) if bleu_scores else 0
+    #     # Compute Average Sentence-Level BLEU
+    #     avg_sentence_bleu_score = sum(sentence_bleu_scores) / len(sentence_bleu_scores) if sentence_bleu_scores else 0
 
-    #     logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
-    #     logger(f"Average BLEU score: {average_bleu_score:.4f}")
+    #     # Log the scores
+    #     logger = Logger(os.path.join(self.preds_file_path, "scores.txt"))
+    #     logger(f"Average Sentence BLEU score: {avg_sentence_bleu_score:.4f}")
+    #     logger(f"Corpus BLEU score: {corpus_bleu_score:.4f}")
 
-    #     return average_bleu_score
+    #     return {
+    #         "average_sentence_bleu": avg_sentence_bleu_score,
+    #         "corpus_bleu": corpus_bleu_score
+    #     }
+
+
+    def evaluate_transliteration(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = list(self.preds[i][1].replace("\n", ""))
+            self.answers[i] = list(self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, ""))
+
+        smooth_fn = SmoothingFunction().method1
+
+        bleu_scores = []
+        for reference, candidate in zip(self.answers, self.preds):
+            bleu_score = sentence_bleu([reference], candidate, smoothing_function=smooth_fn)
+            bleu_scores.append(bleu_score)
+
+        average_bleu_score = sum(bleu_scores) / len(bleu_scores) if bleu_scores else 0
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Average BLEU score: {average_bleu_score:.4f}")
+
+        return average_bleu_score
 
     def evaluate_translation(self):
         self.get_preds()

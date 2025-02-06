@@ -67,7 +67,7 @@ def finetune(args, logger):
             lr_scheduler_type="cosine",
             seed=seed,
             output_dir=f"./outputs/{args.model}_{args.task}_{args.prompt_lang}",
-            save_strategy="no"
+            save_strategy="no"  # Disable checkpoint saving
         ),
     )
 
