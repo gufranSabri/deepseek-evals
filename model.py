@@ -16,10 +16,12 @@ class FT_Models:
             "R1-Q7B": "unsloth/DeepSeek-R1-Distill-Qwen-7B",
             "R1": "unsloth/DeepSeek-R1",
             "R1-L8B": "unsloth/DeepSeek-R1-Distill-Llama-8B",
+            "R1-Q14B": "unsloth/DeepSeek-R1-Distill-Qwen-14B",
             
             "Q2.5-0.5B": "unsloth/Qwen2.5-0.5B",
             "Q2.5-1.5B": "unsloth/Qwen2.5-1.5B",
             "Q2.5-7B": "unsloth/Qwen2.5-7B",
+            
 
             "P4": "unsloth/Phi-4",
 
@@ -68,8 +70,18 @@ class FT_Models:
 
         return model, tokenizer
 
-# if __name__ == "__main__":
-#     FT_Models("R1-Q1.5B")
+if __name__ == "__main__":
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name = "unsloth/DeepSeek-R1-Distill-Llama-8B",
+        max_seq_length = 2048,
+        load_in_4bit = False,
+    )
+
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name = "unsloth/DeepSeek-R1-Distill-Qwen-14B",
+        max_seq_length = 2048,
+        load_in_4bit = False,
+    )
 #     FT_Models("R1-Q7B")
 #     FT_Models("R1")
 #     FT_Models("R1-L8B")

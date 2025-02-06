@@ -107,9 +107,10 @@ class Gen:
 
         config_files = {
             "config.json": base_model_path,
+            "model.safetensors.index.json": base_model_path,
             "adapter_config.json": lora_adapter_path,
             "model.safetensors": base_model_path,
-            "adapter_model.safetensors": lora_adapter_path
+            "adapter_model.safetensors": lora_adapter_path,
         }
 
         # HAVE TO DO SOME REPO MANAGEMENT
@@ -122,6 +123,11 @@ class Gen:
                 source_path = os.path.join(model_path, file_name)
                 if os.path.exists(source_path):
                     shutil.move(source_path, os.path.join(target_dir, file_name))
+
+            for file in os.listdir(model_path):
+                if "model-000" in file:
+                    source_path = os.path.join(model_path, file)
+                    shutil.move(source_path, os.path.join(base_model_path, file))
 
             # COPY COMMON FILES TO BOTH DIRS
             generation_config_source = os.path.join(model_path, "generation_config.json")
@@ -153,7 +159,6 @@ class Gen:
 
         
 if __name__ == "__main__":
-    parser=argparse.ArgumentParser()
     parser=argparse.ArgumentParser()
     parser.add_argument('--model',dest='model')
     parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')

@@ -41,8 +41,8 @@ class FT_Dataset:
             "paraphrasing_train": "aishaalansari/paraphrase" ,
             "paraphrasing_test": "aishaalansari/Paraphrasing",
 
-            "transliteration_train": "aishaalansari/Transliteration_NEW",
-            "transliteration_test": "aishaalansari/Transliteration_NEW",
+            "transliteration_train": "./data/transliteration_train.csv",
+            "transliteration_test": "./data/transliteration_test.csv",
 
             "GQA_train": "asas-ai/tydiqa-goldp-ar",
             "GQA_test": "asas-ai/tydiqa-goldp-ar",
@@ -273,8 +273,8 @@ class FT_Dataset:
 
     
     def format_prompt_transliteration(self,data):
-        EN = data["English"]
-        AR = data["Arabic"]
+        EN = data["source"]
+        AR = data["transliteration"]
         
         texts = []
         for en, ar in zip(EN, AR):
