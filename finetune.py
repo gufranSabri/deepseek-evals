@@ -68,6 +68,7 @@ def finetune(args, logger):
             seed=seed,
             output_dir=f"./outputs/{args.model}_{args.task}_{args.prompt_lang}",
             save_strategy="no"  # Disable checkpoint saving
+
         ),
     )
 
@@ -130,8 +131,8 @@ if __name__ == '__main__':
         logger(f"{arg.upper()}: {value}")
     logger("\n\n======================================================")
 
-    # try:
-    finetune(args, logger)
-    # except Exception as e:
-    #     logger(e)
-    #     logger("\n\n")
+    try:
+        finetune(args, logger)
+    except Exception as e:
+        logger(e)
+        logger("\n\n")
