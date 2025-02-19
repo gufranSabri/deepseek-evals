@@ -20,7 +20,6 @@ from dataset import FT_Dataset
 from utils import Logger
 
 def finetune(args, logger):
-    # SEED STUFF
     seed = 42
     random.seed(seed)
     torch.manual_seed(seed)
@@ -30,16 +29,16 @@ def finetune(args, logger):
     torch.backends.cudnn.deterministic=True
     torch.backends.cudnn.benchmark=False
 
-    # MODEL AND TOKENIZER
     model, tokenizer = FT_Models(args.model, logger=logger).get_model(args)
 
-    # DATASET PREP
     dataset_helper = FT_Dataset(tokenizer.eos_token, split="train", logger=logger)
     dataset = dataset_helper.get_dataset(args.task, args.prompt_lang)
     dataset_size = dataset_helper.get_size()
 
-    # TRAIN
-    max_steps = min(int((args.epochs * dataset_size)/(args.batch_size * args.gradient_accumulation_steps)), args.max_steps)
+    max_steps = min(
+        int((args.epochs * dataset_size)/(args.batch_size * args.gradient_accumulation_steps)), 
+        args.max_steps
+    )
     
     logger("======================================================")
     logger("STARTING TRAINING")
@@ -67,8 +66,7 @@ def finetune(args, logger):
             lr_scheduler_type="cosine",
             seed=seed,
             output_dir=f"./outputs/{args.model}_{args.task}_{args.prompt_lang}",
-            save_strategy="no"  # Disable checkpoint saving
-
+            save_strategy="no"
         ),
     )
 
@@ -84,9 +82,8 @@ def finetune(args, logger):
     logger(f"Training loss: {trainer_stats.training_loss}")
     logger(f"Time Taken: {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
 
-    # SAVE MODEL
-    if not os.path.exists("./models"): os.mkdir("./models")
-    model_path = os.path.join("./models/", f"{args.model}_{args.task}_{args.prompt_lang}")
+    if not os.path.exists("./ft_models"): os.mkdir("./ft_models")
+    model_path = os.path.join("./ft_models/", f"{args.model}_{args.task}_{args.prompt_lang}")
     os.mkdir(model_path)
 
     model.save_pretrained(model_path) 
@@ -100,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--task',dest='task', default='sentiment')
     parser.add_argument('--rank',dest='rank', default='4', help='4, 8, 16')
     parser.add_argument('--load_4bit',dest='load_4bit', default='0')
-    parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
+    parser.add_argument('--max_seq_length', dest='max_seq_length', default='1024')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
     parser.add_argument('--epochs', dest='epochs', default='2')
@@ -115,17 +112,16 @@ if __name__ == '__main__':
     args.epochs = int(args.epochs)
     args.max_steps = int(args.max_steps)
 
-    # assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
-    # assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
+    assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
     assert args.load_4bit in [0, 1], "Invalid Rank!"
-    assert args.max_seq_length in [512, 1024, 2048], "Invalid Rank!"
+    assert args.max_seq_length in [512, 1024, 2048], "Invalid Sequence Length!"
     assert args.batch_size in [2, 4, 8], "Invalid Batch Size!"
     assert args.gradient_accumulation_steps in [2], "Invalid Grad Accumulation Steps!"
     assert args.epochs > 0, "Number of epochs should be greater than 0"
 
-    logger = Logger(os.path.join("./logs/", f"{args.model}_{args.task}_{args.prompt_lang}.txt"))
+    logger = Logger(os.path.join("./ft_logs/", f"{args.model}_{args.task}_{args.prompt_lang}.txt"))
     logger("CONFIGS:")
     for arg, value in vars(args).items():
         logger(f"{arg.upper()}: {value}")

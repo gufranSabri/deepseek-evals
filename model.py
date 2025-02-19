@@ -14,25 +14,13 @@ class FT_Models:
         self.models = {
             "R1-Q1.5B": "unsloth/DeepSeek-R1-Distill-Qwen-1.5B",
             "R1-Q7B": "unsloth/DeepSeek-R1-Distill-Qwen-7B",
-            "R1": "unsloth/DeepSeek-R1",
-            "R1-L8B": "unsloth/DeepSeek-R1-Distill-Llama-8B",
             "R1-Q14B": "unsloth/DeepSeek-R1-Distill-Qwen-14B",
-            
-            "Q2.5-0.5B": "unsloth/Qwen2.5-0.5B",
-            "Q2.5-1.5B": "unsloth/Qwen2.5-1.5B",
-            "Q2.5-7B": "unsloth/Qwen2.5-7B",
-            
-
-            "P4": "unsloth/Phi-4",
-
-            "L3.2-1B": "unsloth/Llama-3.2-1B",
-            "L3.2-3B": "unsloth/Llama-3.2-3B",
         }
 
     def get_tokenizer(self, model_name):
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = self.models[model_name],
-            max_seq_length = 2048,
+            max_seq_length = 1024,
             load_in_4bit = False,
         )
 
@@ -78,25 +66,3 @@ class FT_Models:
             self.logger("LoRA on q_proj, k_proj, v_proj\n\n")
 
         return model, tokenizer
-
-if __name__ == "__main__":
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name = "unsloth/DeepSeek-R1-Distill-Llama-8B",
-        max_seq_length = 2048,
-        load_in_4bit = False,
-    )
-
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name = "unsloth/DeepSeek-R1-Distill-Qwen-14B",
-        max_seq_length = 2048,
-        load_in_4bit = False,
-    )
-#     FT_Models("R1-Q7B")
-#     FT_Models("R1")
-#     FT_Models("R1-L8B")
-#     FT_Models("Q2.5-0.5B")
-#     FT_Models("Q2.5-1.5B")
-#     FT_Models("Q2.5-7B")
-#     FT_Models("P4")
-#     FT_Models("L3.2-1B")
-#     FT_Models("L3.2-3B")

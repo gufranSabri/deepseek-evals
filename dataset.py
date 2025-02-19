@@ -38,8 +38,8 @@ class FT_Dataset:
             "transliteration_train": "./data/transliteration_train.csv",
             "transliteration_test": "./data/transliteration_test.csv",
 
-            "sqs_train": "./data/sqs_train.csv",
-            "sqs_test": "./data/sqs_test.csv",
+            "paraphrase_detection_train": "./data/paraphrase_detection_train.csv",
+            "paraphrase_detection_test": "./data/paraphrase_detection_test.csv",
 
             "stance_train": "./data/stance_train.csv",
             "stance_test": "./data/stance_test.csv",
@@ -79,8 +79,8 @@ class FT_Dataset:
             "transliteration_train": "train",
             "transliteration_test": "test",
 
-            "sqs_train":"train",
-            "sqs_test":"test",
+            "paraphrase_detection_train":"train",
+            "paraphrase_detection_test":"test",
 
             "claim_train":"train",
             "claim_test":"test",
@@ -152,8 +152,8 @@ class FT_Dataset:
             "GQA_train": self.format_prompt_GQA,
             "GQA_test": self.format_prompt_GQA,
 
-            "sqs_train": self.format_prompt_sqs,
-            "sqs_test": self.format_prompt_sqs,
+            "paraphrase_detection_train": self.format_prompt_paraphrase_detection,
+            "paraphrase_detection_test": self.format_prompt_paraphrase_detection,
 
             "claim_train": self.format_prompt_claim,
             "claim_test": self.format_prompt_claim,
@@ -167,15 +167,21 @@ class FT_Dataset:
 
         self.task_instructions = {
             "sentiment": "You are an expert in sentiment analysis and natural language processing. Analyze the given text and answer 1 if the sentiment is positive and 0 if the sentiment is negative.",
+
             "mcq": "You are an advanced AI tutor with expertise in multiple-choice reasoning. Carefully analyze the question and provided answer choices, then select the correct answer.",
+
             "pos_tagging": ';You are a computational linguist specializing in syntactic analysis. Given a sentence, identify and label the part-of-speech (POS) tag for each word. Your options are ["NOUN", "PUNCT", "ADP", "NUM", "SYM", "SCONJ", "ADJ", "PART", "DET", "CCONJ", "PROPN", "PRON", "X", "ADV", "INTJ", "VERB", "AUX"]',
+
             "summarization": "You are a professional text summarizer with expertise in extracting key information. Read the given text and generate a concise and coherent summary that preserves the main ideas and important details.",
+
             "translation": "You are a multilingual translation expert proficient in Arabic and Russian. Translate the following Arabic text into fluent and grammatically correct Russian while preserving the original meaning.",
+
             # "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rephrase the given sentence in a clear, natural, and grammatically correct way.",
+            
             "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rewrite the following passage using different words and sentence structures while keeping the meaning intact.",
             "transliteration": "You are a linguistic specialist skilled in phonetic transcription. Convert the given text from one script to another while preserving pronunciation as accurately as possible.",
             "GQA": "You are an advanced knowledge-based AI trained in answering general questions across multiple domains. Provide an accurate, well-structured, and informative response to the following question.",
-            "sqs": "Determine whether the following two questions have the same meaning or convey similar intent. Respond with '1' if they are semantically similar and '0' otherwise. Provide a brief explanation if needed.",
+            "paraphrase_detection": "Determine whether the following two questions have the same meaning or convey similar intent. Respond with '1' if they are semantically similar and '0' otherwise. Provide a brief explanation if needed.",
             "claim": "Analyze the following claim and determine whether it is true or false. Provide a '0' or '1' response, and briefly justify your answer based on factual accuracy, logical consistency, or available evidence.",
             "stance": "Compare the stance expressed in the following two sentences. Determine whether they agree, disagree, or have an unrelated/unclear stance. Respond with '1' if both sentences support the same claim, '0' if they take opposing positions, or '2' if the stance is unclear or unrelated.",
             "wsd": "You are given an example sentence, its the word to focus on, and the word's sense/definition. Your task is to determine whether the given definition correctly represents the meaning of the word in the provided example. Predict 1 if the word sense matches the meaning in the example. Predict 0 if the word sense does not match the meaning in the example.",
@@ -190,7 +196,7 @@ class FT_Dataset:
             "paraphrasing": "أنت خبير لغوي ماهر في إعادة كتابة النص مع الحفاظ على معناه الأصلي. أعد صياغة الجملة المعطاة بطريقة واضحة وطبيعية وصحيحة نحويًا.",
             "transliteration": "أنت متخصص لغوي ماهر في النسخ الصوتي. قم بتحويل النص المعطى من نص إلى آخر مع الحفاظ على النطق بدقة قدر الإمكان.",
             "GQA": "أنت عبارة عن ذكاء اصطناعي متقدم قائم على المعرفة ومدرب على الإجابة على أسئلة عامة عبر مجالات متعددة. قدم إجابة دقيقة ومنظمة جيدًا وغنية بالمعلومات للسؤال التالي.",
-            "sqs": 'حدد ما إذا كان السؤالان التاليان لهما نفس المعنى أو ينقلان نفس القصد. أجب بـ "1" إذا كانا متشابهين دلاليًا و"0" بخلاف ذلك. قدم شرحًا موجزًا ​​إذا لزم الأمر.',
+            "paraphrase_detection": 'حدد ما إذا كان السؤالان التاليان لهما نفس المعنى أو ينقلان نفس القصد. أجب بـ "1" إذا كانا متشابهين دلاليًا و"0" بخلاف ذلك. قدم شرحًا موجزًا ​​إذا لزم الأمر.',
             "claim": 'قم بتحليل الادعاء التالي وحدد ما إذا كان صحيحًا أم خاطئًا. أعطِ إجابة "0" أو "1"، وبرر إجابتك بإيجاز استنادًا إلى دقة الحقائق أو الاتساق المنطقي أو الأدلة المتاحة.',
             "stance": 'قارن بين الموقفين المعبر عنهما في الجملتين التاليتين. حدد ما إذا كانا متفقين أو مختلفين أو لديهما موقف غير ذي صلة/غير واضح. أجب بـ "1" إذا كانت الجملتان تدعمان نفس الادعاء، أو "0" إذا كانتا تتخذان مواقف متعارضة، أو "2" إذا كان الموقف غير واضح أو غير ذي صلة.',
             "wsd": 'لقد تم إعطاؤك جملة نموذجية، وهي الكلمة التي يجب التركيز عليها، ومعنى الكلمة/تعريفها. مهمتك هي تحديد ما إذا كان التعريف المعطى يمثل بشكل صحيح معنى الكلمة في المثال المقدم. توقع 1 إذا كان معنى الكلمة يتطابق مع المعنى في المثال. توقع 0 إذا كان معنى الكلمة لا يتطابق مع المعنى في المثال.'
@@ -331,7 +337,7 @@ class FT_Dataset:
         
         return {"text": texts}
 
-    def format_prompt_sqs(self, data):
+    def format_prompt_paraphrase_detection(self, data):
         question1 = data["question1"]
         question2 = data["question2"]
         questions = zip(question1, question2)
@@ -370,7 +376,6 @@ class FT_Dataset:
         
         return {"text": texts}
 
-
     def format_prompt_wsd(self, data):
         exs = data["ex"]
         words = data["word"]
@@ -391,7 +396,7 @@ class FT_Dataset:
         if lang == "en":
             self.prompt_template = "Below is an instruction that describes a task, paired with an input that provides further context.\n"
             self.prompt_template += "Write a response that appropriately completes the request.\n"
-            self.prompt_template += "Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.\n"
+            # self.prompt_template += "Before answering, think carefully about the question and create a step-by-step chain of thoughts to ensure a logical and accurate response.\n"
             self.prompt_template += "\n"
             self.prompt_template += "### Instruction:\n"
             self.prompt_template += f"{self.task_instructions[task]}\n"
@@ -405,7 +410,7 @@ class FT_Dataset:
         elif lang == "ar":
             self.prompt_template = "يوجد أدناه تعليمات تصف مهمة، مقترنة بإدخال يوفر سياقًا إضافيًا." + "\n"
             self.prompt_template += "اكتب الرد الذي يكمل الطلب بشكل مناسب." + "\n"
-            self.prompt_template = "قبل الإجابة، فكر جيدًا في السؤال وقم بإنشاء سلسلة من الأفكار خطوة بخطوة لضمان الحصول على إجابة منطقية ودقيقة." + "\n"
+            # self.prompt_template = "قبل الإجابة، فكر جيدًا في السؤال وقم بإنشاء سلسلة من الأفكار خطوة بخطوة لضمان الحصول على إجابة منطقية ودقيقة." + "\n"
             self.prompt_template += "\n"
             self.prompt_template += ":تعليمات" + "###" + "\n"
             self.prompt_template += f"{self.task_instructions_ar[task]}\n"
@@ -486,4 +491,4 @@ class FT_Dataset:
 
 
 if __name__ == "__main__":
-    FT_Dataset("", split="test").get_dataset("sqs")
+    FT_Dataset("", split="test").get_dataset("paraphrase_detection")
