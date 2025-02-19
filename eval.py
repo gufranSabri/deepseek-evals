@@ -30,6 +30,8 @@ import sacrebleu
 
 from rouge import Rouge
 from diacritization_evaluation import wer, der
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
 
 
 class Eval:
@@ -80,61 +82,15 @@ class Eval:
         self.answers = list(self.dataset["text"])
 
         for i in range(len(self.answers)):
-            self.answers[i] = self.answers[i].split(":إجابة###")[1]
+            if self.prompt_lang == "ar":
+                self.answers[i] = self.answers[i].split(":إجابة###")[1]
+            else:
+                self.answers[i] = self.answers[i].split("### Response:")[1]
+            
             # if i == 10: break
 
     def load_model(self):
-        file_name = "_".join([self.model_name, self.task, self.prompt_lang])
-        model_path = os.path.join("./models", file_name)
-
-        base_model_path = os.path.join(model_path, "base_model")
-        lora_adapter_path = os.path.join(model_path, "lora_adapter")
-
-        config_files = {
-            "config.json": base_model_path,
-            "adapter_config.json": lora_adapter_path,
-            "model.safetensors": base_model_path,
-            "adapter_model.safetensors": lora_adapter_path
-        }
-
-        # HAVE TO DO SOME REPO MANAGEMENT
-        if not os.path.exists(base_model_path):
-            os.makedirs(base_model_path)
-            os.makedirs(lora_adapter_path)
-
-            # SEPARATE BASE MODEL AND ADAPTER FILES
-            for file_name, target_dir in config_files.items():
-                source_path = os.path.join(model_path, file_name)
-                if os.path.exists(source_path):
-                    shutil.move(source_path, os.path.join(target_dir, file_name))
-
-            # COPY COMMON FILES TO BOTH DIRS
-            generation_config_source = os.path.join(model_path, "generation_config.json")
-            shutil.copy(generation_config_source, os.path.join(base_model_path, "generation_config.json"))
-            shutil.copy(generation_config_source, os.path.join(lora_adapter_path, "generation_config.json"))
-
-            generation_config_source = os.path.join(model_path, "special_tokens_map.json")
-            shutil.copy(generation_config_source, os.path.join(base_model_path, "special_tokens_map.json"))
-            shutil.copy(generation_config_source, os.path.join(lora_adapter_path, "special_tokens_map.json"))
-
-            generation_config_source = os.path.join(model_path, "tokenizer_config.json")
-            shutil.copy(generation_config_source, os.path.join(base_model_path, "tokenizer_config.json"))
-            shutil.copy(generation_config_source, os.path.join(lora_adapter_path, "tokenizer_config.json"))
-
-            generation_config_source = os.path.join(model_path, "tokenizer.json")
-            shutil.copy(generation_config_source, os.path.join(base_model_path, "tokenizer.json"))
-            shutil.copy(generation_config_source, os.path.join(lora_adapter_path, "tokenizer.json"))
-
-        base_model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name=base_model_path,
-            max_seq_length=2048,
-            load_in_4bit=True,
-        )
-
-        FastLanguageModel.for_inference(base_model)
-
-        self.tokenizer = tokenizer
-        self.model = base_model
+        self.tokenizer = FT_Models(self.model_name).get_tokenizer(self.model_name)
 
     def get_preds(self):
         preds_folder = "_".join([self.model_name, self.task, self.prompt_lang])
@@ -176,6 +132,17 @@ class Eval:
         if self.task == "translation":
             return self.evaluate_translation()
 
+        if self.task == "sqs":
+            return self.evaluate_sqs()
+
+        if self.task == "claim":
+            return self.evaluate_claim()
+
+        if self.task == "stance":
+            return self.evaluate_stance()
+        
+        if self.task == "wsd":
+            return self.evaluate_wsd()
 
     def evaluate_sentiment(self):
         self.get_preds()
@@ -188,11 +155,34 @@ class Eval:
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
 
         accuracy = accuracy_score(self.preds, self.answers)
+        precision = precision_score(self.preds, self.answers, average='macro')
+        recall = recall_score(self.preds, self.answers, average='macro')
+        f1 = f1_score(self.preds, self.answers, average='macro')
 
         logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
         logger(f"Accuracy: {accuracy}")
+        logger(f"Precision: {precision}")
+        logger(f"Recall: {recall}")
+        logger(f"F1 Score: {f1}")
 
-        return accuracy
+        return accuracy, precision, recall, f1
+
+    # def evaluate_sentiment(self):
+    #     self.get_preds()
+    #     self.answers = self.answers[:len(self.preds)]
+
+    #     for i in range(len(self.preds)):
+    #         self.preds[i] = self.preds[i][1][0]
+
+    #     for i in range(len(self.answers)):
+    #         self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+    #     accuracy = accuracy_score(self.preds, self.answers)
+
+    #     logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+    #     logger(f"Accuracy: {accuracy}")
+
+    #     return accuracy
 
     def evaluate_pos_tagging(self):
         self.get_preds()
@@ -360,6 +350,74 @@ class Eval:
             "corpus_bleu": corpus_bleu_score
         }
 
+    def evaluate_sqs(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1][0]
+
+        for i in range(len(self.answers)):
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        accuracy = accuracy_score(self.preds, self.answers)
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Accuracy: {accuracy}")
+
+        return accuracy
+
+    def evaluate_claim(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1][0]
+
+        for i in range(len(self.answers)):
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        accuracy = accuracy_score(self.preds, self.answers)
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Accuracy: {accuracy}")
+
+        return accuracy
+
+    def evaluate_stance(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1][0]
+
+        for i in range(len(self.answers)):
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        accuracy = accuracy_score(self.preds, self.answers)
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Accuracy: {accuracy}")
+
+        return accuracy
+
+    def evaluate_wsd(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        for i in range(len(self.preds)):
+            self.preds[i] = self.preds[i][1][0]
+
+        for i in range(len(self.answers)):
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        accuracy = accuracy_score(self.preds, self.answers)
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"Accuracy: {accuracy}")
+
+        return accuracy
+
     def evaluate_diacratization(self):
         self.get_preds()
         self.answers = self.answers[:len(self.preds)]
@@ -399,7 +457,7 @@ if __name__ == "__main__":
     args=parser.parse_args()
 
     # assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
-    assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
+    # assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
     e = Eval(args.task, args.model, args.prompt_lang)

@@ -23,12 +23,6 @@ class FT_Dataset:
             "sentiment_train":"ajgt_twitter_ar",
             "sentiment_test":"ajgt_twitter_ar",
 
-            "diacratization_train":"arbml/tashkeelav2",
-            "diacratization_test":"arbml/tashkeelav2",
-
-            "mcq_train":"aishaalansari/CIDAR100",
-            "mcq_test":"aishaalansari/CIDAR100",
-
             "pos_tagging_train":"universal_dependencies",
             "pos_tagging_test":"universal_dependencies",
 
@@ -44,19 +38,31 @@ class FT_Dataset:
             "transliteration_train": "./data/transliteration_train.csv",
             "transliteration_test": "./data/transliteration_test.csv",
 
+            "sqs_train": "./data/sqs_train.csv",
+            "sqs_test": "./data/sqs_test.csv",
+
+            "stance_train": "./data/stance_train.csv",
+            "stance_test": "./data/stance_test.csv",
+
+            "claim_train": "./data/claim_train.csv",
+            "claim_test": "./data/claim_test.csv",
+
+            "wsd_train": "./data/wsd_train.csv",
+            "wsd_test": "./data/wsd_test.csv",
+
+            "mcq_train":"aishaalansari/CIDAR100",
+            "mcq_test":"aishaalansari/CIDAR100",
+
             "GQA_train": "asas-ai/tydiqa-goldp-ar",
             "GQA_test": "asas-ai/tydiqa-goldp-ar",
+
+            "diacratization_train":"arbml/tashkeelav2",
+            "diacratization_test":"arbml/tashkeelav2",
         }
 
         self.dataset_splits = {
             "sentiment_train":"train[:1440]",
             "sentiment_test":"train[1440:]",
-
-            "diacratization_train":"train",
-            "diacratization_test":"test",
-
-            "mcq_train":"train",
-            "mcq_test":"test",
 
             "pos_tagging_train":"train",
             "pos_tagging_test":"test",
@@ -73,8 +79,23 @@ class FT_Dataset:
             "transliteration_train": "train",
             "transliteration_test": "test",
 
+            "sqs_train":"train",
+            "sqs_test":"test",
+
+            "claim_train":"train",
+            "claim_test":"test",
+
+            "stance_train":"train",
+            "stance_test":"test",
+
+            "mcq_train":"train",
+            "mcq_test":"test",
+
             "GQA_train": "train",
             "GQA_test": "validation",
+
+            "diacratization_train":"train",
+            "diacratization_test":"test",
         }
 
         self.subset_names = {
@@ -98,9 +119,6 @@ class FT_Dataset:
 
             "paraphrasing_train": None,
             "paraphrasing_test": None,
-
-            "transliteration_train": None,
-            "transliteration_test": None,
 
             "GQA_train": None,
             "GQA_test": None,
@@ -133,23 +151,38 @@ class FT_Dataset:
 
             "GQA_train": self.format_prompt_GQA,
             "GQA_test": self.format_prompt_GQA,
+
+            "sqs_train": self.format_prompt_sqs,
+            "sqs_test": self.format_prompt_sqs,
+
+            "claim_train": self.format_prompt_claim,
+            "claim_test": self.format_prompt_claim,
+
+            "stance_train": self.format_prompt_stance,
+            "stance_test": self.format_prompt_stance,
+
+            "wsd_train": self.format_prompt_wsd,
+            "wsd_test": self.format_prompt_wsd,
         }
 
         self.task_instructions = {
-            "sentiment": "You are an expert in sentiment analysis and natural language processing. Analyze the given text and determine whether its sentiment is positive or negative.",
-            "diacratization": "You are an expert in Arabic linguistics and orthography. Given an undiacritized Arabic text, accurately restore the missing diacritics.",
+            "sentiment": "You are an expert in sentiment analysis and natural language processing. Analyze the given text and answer 1 if the sentiment is positive and 0 if the sentiment is negative.",
             "mcq": "You are an advanced AI tutor with expertise in multiple-choice reasoning. Carefully analyze the question and provided answer choices, then select the correct answer.",
             "pos_tagging": ';You are a computational linguist specializing in syntactic analysis. Given a sentence, identify and label the part-of-speech (POS) tag for each word. Your options are ["NOUN", "PUNCT", "ADP", "NUM", "SYM", "SCONJ", "ADJ", "PART", "DET", "CCONJ", "PROPN", "PRON", "X", "ADV", "INTJ", "VERB", "AUX"]',
             "summarization": "You are a professional text summarizer with expertise in extracting key information. Read the given text and generate a concise and coherent summary that preserves the main ideas and important details.",
             "translation": "You are a multilingual translation expert proficient in Arabic and Russian. Translate the following Arabic text into fluent and grammatically correct Russian while preserving the original meaning.",
-            "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rephrase the given sentence in a clear, natural, and grammatically correct way.",
+            # "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rephrase the given sentence in a clear, natural, and grammatically correct way.",
+            "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rewrite the following passage using different words and sentence structures while keeping the meaning intact.",
             "transliteration": "You are a linguistic specialist skilled in phonetic transcription. Convert the given text from one script to another while preserving pronunciation as accurately as possible.",
             "GQA": "You are an advanced knowledge-based AI trained in answering general questions across multiple domains. Provide an accurate, well-structured, and informative response to the following question.",
+            "sqs": "Determine whether the following two questions have the same meaning or convey similar intent. Respond with '1' if they are semantically similar and '0' otherwise. Provide a brief explanation if needed.",
+            "claim": "Analyze the following claim and determine whether it is true or false. Provide a '0' or '1' response, and briefly justify your answer based on factual accuracy, logical consistency, or available evidence.",
+            "stance": "Compare the stance expressed in the following two sentences. Determine whether they agree, disagree, or have an unrelated/unclear stance. Respond with '1' if both sentences support the same claim, '0' if they take opposing positions, or '2' if the stance is unclear or unrelated.",
+            "wsd": "You are given an example sentence, its the word to focus on, and the word's sense/definition. Your task is to determine whether the given definition correctly represents the meaning of the word in the provided example. Predict 1 if the word sense matches the meaning in the example. Predict 0 if the word sense does not match the meaning in the example.",
         }
 
         self.task_instructions_ar = {
-            "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى و اجب 1 إذا كانت مشاعره إيجابية و 0 إذا كانت مشاعره سلبية.",
-            "diacratization": "أنت خبير في علم اللغة والنحو العربي. إذا كان النص العربي بدون علامات تشكيل، قم باستعادة علامات التشكيل المفقودة بدقة.",
+            "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى وأجب بـ 1 إذا كانت المشاعر إيجابية و0 إذا كانت المشاعر سلبية.",
             "mcq": "أنت مدرس متقدم في مجال الذكاء الاصطناعي يتمتع بخبرة في اسئلة الاختيار من متعدد. قم بتحليل السؤال والخيارات المقدمة بعناية، ثم حدد الإجابة الصحيحة.",
             "pos_tagging": '["NOUN"، "PUNCT"، "ADP"، "NUM"، "SYM"، "SCONJ"، "ADJ"، "PART"، "DET"، "CCONJ"، "PROPN"، "PRON"، "X"، "ADV"، "INTJ"، "VERB"، "AUX"] أنت عالم لغوي حاسوبي متخصص في التحليل النحوي. إذا كان لديك جملة، حدد النوع الصرفي لكل كلمة من الكلمات. خياراتك هي',
             "summarization": "أنت متخصص في تلخيص النصوص ولديك خبرة في استخراج المعلومات الأساسية. اقرأ النص المقدم وأنشئ ملخصًا موجزًا ​​ومتماسكًا يحافظ على الأفكار الرئيسية والتفاصيل المهمة.",
@@ -157,6 +190,10 @@ class FT_Dataset:
             "paraphrasing": "أنت خبير لغوي ماهر في إعادة كتابة النص مع الحفاظ على معناه الأصلي. أعد صياغة الجملة المعطاة بطريقة واضحة وطبيعية وصحيحة نحويًا.",
             "transliteration": "أنت متخصص لغوي ماهر في النسخ الصوتي. قم بتحويل النص المعطى من نص إلى آخر مع الحفاظ على النطق بدقة قدر الإمكان.",
             "GQA": "أنت عبارة عن ذكاء اصطناعي متقدم قائم على المعرفة ومدرب على الإجابة على أسئلة عامة عبر مجالات متعددة. قدم إجابة دقيقة ومنظمة جيدًا وغنية بالمعلومات للسؤال التالي.",
+            "sqs": 'حدد ما إذا كان السؤالان التاليان لهما نفس المعنى أو ينقلان نفس القصد. أجب بـ "1" إذا كانا متشابهين دلاليًا و"0" بخلاف ذلك. قدم شرحًا موجزًا ​​إذا لزم الأمر.',
+            "claim": 'قم بتحليل الادعاء التالي وحدد ما إذا كان صحيحًا أم خاطئًا. أعطِ إجابة "0" أو "1"، وبرر إجابتك بإيجاز استنادًا إلى دقة الحقائق أو الاتساق المنطقي أو الأدلة المتاحة.',
+            "stance": 'قارن بين الموقفين المعبر عنهما في الجملتين التاليتين. حدد ما إذا كانا متفقين أو مختلفين أو لديهما موقف غير ذي صلة/غير واضح. أجب بـ "1" إذا كانت الجملتان تدعمان نفس الادعاء، أو "0" إذا كانتا تتخذان مواقف متعارضة، أو "2" إذا كان الموقف غير واضح أو غير ذي صلة.',
+            "wsd": 'لقد تم إعطاؤك جملة نموذجية، وهي الكلمة التي يجب التركيز عليها، ومعنى الكلمة/تعريفها. مهمتك هي تحديد ما إذا كان التعريف المعطى يمثل بشكل صحيح معنى الكلمة في المثال المقدم. توقع 1 إذا كان معنى الكلمة يتطابق مع المعنى في المثال. توقع 0 إذا كان معنى الكلمة لا يتطابق مع المعنى في المثال.'
         }
 
         self.size = -1
@@ -294,6 +331,62 @@ class FT_Dataset:
         
         return {"text": texts}
 
+    def format_prompt_sqs(self, data):
+        question1 = data["question1"]
+        question2 = data["question2"]
+        questions = zip(question1, question2)
+        labels = data["label"]
+        texts = []
+ 
+        for (question1, question2), label in zip(questions, labels):
+            q_res = "سؤال ١: "+ question1 + "\n" + "سؤال ٢: " + question2
+            text = self.prompt_template.format(q_res, label if not self.test_mode else "") + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
+
+    def format_prompt_claim(self, data):
+        claims = data["claim_s"]
+        flags = data["fake_flag"]
+        texts = []
+ 
+        for c, f in zip(claims, flags):
+            text = self.prompt_template.format(c, f if not self.test_mode else "") + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
+
+    def format_prompt_stance(self, data):
+        sent1 = data["s1"]
+        sent2 = data["s2"]
+        questions = zip(sent1, sent2)
+        stances = data["stance"]
+        texts = []
+ 
+        for (sent1, sent2), stance in zip(questions, stances):
+            q_res = "جملة ١: "+ sent1 + "\n" + "جملة ٢: " + sent2
+            text = self.prompt_template.format(q_res, stance if not self.test_mode else "") + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
+
+
+    def format_prompt_wsd(self, data):
+        exs = data["ex"]
+        words = data["word"]
+        defs = data["def"]
+        labels = data["label"]
+        qs = zip(exs, words, defs)
+        texts = []
+ 
+        for (eg, word, de), label in zip(qs, labels):
+            q_res = "جملة: "+ eg + "\n" + "كلمة: " + word + "\n" + ":تعريف" + de
+            text = self.prompt_template.format(q_res, label if not self.test_mode else "") + self.EOS_TOKEN
+            texts.append(text)
+        
+        return {"text": texts}
+
+
     def construct_prompt(self, task, lang):
         if lang == "en":
             self.prompt_template = "Below is an instruction that describes a task, paired with an input that provides further context.\n"
@@ -333,12 +426,16 @@ class FT_Dataset:
             self.logger(self.prompt_template)
             self.logger("\n\n")
 
-    def get_dataset(self, task, lang="en"):
+    def get_dataset(self, task, lang="ar"):
         self.construct_prompt(task, lang)
         task_split = task + "_" + self.split
 
         if os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".csv"):
             dataset = load_dataset("csv", data_files=self.dataset_names[task_split])["train"]
+
+        elif os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".tsv"):
+            df = pd.read_csv(self.dataset_names[task_split], delimeter="\t")
+            dataset = Dataset.from_pandas(df)["train"]
 
         elif os.path.exists(self.dataset_names[task_split]) and self.dataset_names[task_split].endswith(".pkl"):
             with open(self.dataset_names[task_split], 'rb') as pickle_file:
@@ -375,16 +472,18 @@ class FT_Dataset:
             self.logger("EXAMPLE DATA INSTANCE:")
             self.logger(dataset["text"][-1])
             self.logger("\n\n")
+        else:
+            print("\n\n")
+            print("DATASET SUMMARY:")
+            print(str(dataset))
+            print("\n\n")
+
+            print("EXAMPLE DATA INSTANCE:")
+            print(dataset["text"][-1])
+            print("\n\n") 
 
         return dataset
 
 
 if __name__ == "__main__":
-    FT_Dataset("").get_dataset("sentiment")
-    FT_Dataset("").get_dataset("diacratization")
-    FT_Dataset("").get_dataset("mcq")
-    FT_Dataset("").get_dataset("pos_tagging")
-    FT_Dataset("").get_dataset("rating")
-    FT_Dataset("").get_dataset("summarization")
-    FT_Dataset("").get_dataset("transliteration")
-    FT_Dataset("").get_dataset("translation")
+    FT_Dataset("", split="test").get_dataset("sqs")

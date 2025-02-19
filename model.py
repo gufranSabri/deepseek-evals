@@ -29,6 +29,15 @@ class FT_Models:
             "L3.2-3B": "unsloth/Llama-3.2-3B",
         }
 
+    def get_tokenizer(self, model_name):
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name = self.models[model_name],
+            max_seq_length = 2048,
+            load_in_4bit = False,
+        )
+
+        return tokenizer
+
     def get_model(self, args):
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = self.models[args.model],

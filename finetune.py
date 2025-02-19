@@ -116,7 +116,7 @@ if __name__ == '__main__':
     args.max_steps = int(args.max_steps)
 
     # assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
-    assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
+    # assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
     assert args.load_4bit in [0, 1], "Invalid Rank!"

@@ -63,7 +63,11 @@ class Gen:
             response = self.tokenizer.batch_decode(outputs)
 
             logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
-            logger(response[0].split(":إجابة###")[1].replace(self.tokenizer.eos_token, ""))
+
+            if self.prompt_lang == "ar":
+                logger(response[0].split(":إجابة###")[1].replace(self.tokenizer.eos_token, ""))
+            else:
+                logger(response[0].split("### Response:")[1].replace(self.tokenizer.eos_token, ""))
 
     def load_data(self):
         self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="test", test_mode=True)
@@ -166,7 +170,7 @@ if __name__ == "__main__":
     args=parser.parse_args()
 
     # assert args.model in ["L8B", "L70B", "Q1.5B", "Q7B", "Q14B", "Q32B"], "Invalid model!"
-    assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
+    # assert args.task in ["sentiment", "diacratization", "mcq", "pos_tagging", "summarization", "translation", "paraphrasing", "transliteration", "GQA"], "Invalid Task!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
     g = Gen(args.task, args.model, args.prompt_lang)
