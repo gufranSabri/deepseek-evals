@@ -6,8 +6,7 @@ from dataset import FT_Dataset
 from utils import Logger
 from unsloth import FastLanguageModel
 
-
-class Gen:
+class FT_Inference:
     def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", models_dir="./models", logs_dir="./logs"):
         self.task = task
         self.model_name = model_name
@@ -17,10 +16,10 @@ class Gen:
         self.load_model()
         self.load_data()
 
-        if not os.path.exists("./preds"):
-            os.mkdir("./preds")
+        if not os.path.exists("./ft_preds"):
+            os.mkdir("./ft_preds")
 
-        self.preds_file_path = os.path.join("./preds", "_".join([self.model_name, self.task, self.prompt_lang]))
+        self.preds_file_path = os.path.join("./ft_preds", "_".join([self.model_name, self.task, self.prompt_lang]))
         if os.path.exists(self.preds_file_path):
             shutil.rmtree(self.preds_file_path)
 
@@ -144,5 +143,5 @@ if __name__ == "__main__":
 
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
-    g = Gen(args.task, args.model, args.prompt_lang)
+    g = FT_Inference(args.task, args.model, args.prompt_lang)
     g.generate_predictions()

@@ -29,7 +29,7 @@ def finetune(args, logger):
     torch.backends.cudnn.deterministic=True
     torch.backends.cudnn.benchmark=False
 
-    model, tokenizer = FT_Models(args.model, logger=logger).get_model(args)
+    model, tokenizer = FT_Models(args.model, logger=logger).get_ft_model(args)
 
     dataset_helper = FT_Dataset(tokenizer.eos_token, split="train", logger=logger)
     dataset = dataset_helper.get_dataset(args.task, args.prompt_lang)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--task',dest='task', default='sentiment')
     parser.add_argument('--rank',dest='rank', default='4', help='4, 8, 16')
     parser.add_argument('--load_4bit',dest='load_4bit', default='0')
-    parser.add_argument('--max_seq_length', dest='max_seq_length', default='1024')
+    parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
     parser.add_argument('--epochs', dest='epochs', default='2')
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     args.epochs = int(args.epochs)
     args.max_steps = int(args.max_steps)
 
-    assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
+    # assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
     assert args.load_4bit in [0, 1], "Invalid Rank!"

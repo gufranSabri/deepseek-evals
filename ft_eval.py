@@ -9,17 +9,18 @@ from model import FT_Models
 from dataset import FT_Dataset
 from utils import Logger
 
-class Eval:
-    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar"):
+class FT_Eval:
+    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", preds_folder="./ft_preds"):
         self.task = task
         self.model_name = model_name
         self.prompt_lang = prompt_lang
+        self.preds_folder = preds_folder
 
         self.read_congifs()
         self.load_tokenizer()
         self.load_data()
 
-        self.preds_file_path = os.path.join("./ft_preds", "_".join([self.model_name, self.task, self.prompt_lang]))
+        self.preds_file_path = os.path.join(self.preds_folder, "_".join([self.model_name, self.task, self.prompt_lang]))
 
         self.task_eval_map = {
             "sentiment": "classification",
@@ -89,7 +90,7 @@ class Eval:
 
     def get_preds(self):
         preds_folder = "_".join([self.model_name, self.task, self.prompt_lang])
-        preds_dir = os.path.join("./ft_preds", preds_folder)
+        preds_dir = os.path.join(self.preds_folder, preds_folder)
 
         txt_files = os.listdir(preds_dir)
         if "scores.txt" in txt_files:
@@ -221,5 +222,5 @@ if __name__ == "__main__":
     # assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
-    e = Eval(args.task, args.model, args.prompt_lang)
+    e = FT_Eval(args.task, args.model, args.prompt_lang)
     e.evaluate()

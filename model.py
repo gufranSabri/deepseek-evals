@@ -26,7 +26,17 @@ class FT_Models:
 
         return tokenizer
 
-    def get_model(self, args):
+    def get_zs_model(self, args):
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name = self.models[args.model],
+            max_seq_length = args.max_seq_length,
+            load_in_4bit = args.load_4bit == 1,
+        )
+        FastLanguageModel.for_inference(model)
+
+        return model, tokenizer
+
+    def get_ft_model(self, args):
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name = self.models[args.model],
             max_seq_length = args.max_seq_length,
