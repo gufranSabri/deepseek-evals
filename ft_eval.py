@@ -115,7 +115,7 @@ class Eval:
         for i in range(len(self.answers)):
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
 
-        return self.classification(self.preds, self.answers)
+        return self.calculate_classification(self.preds, self.answers)
 
     def bleu(self):
         self.get_preds()
@@ -125,7 +125,7 @@ class Eval:
             self.preds[i] = self.preds[i][1].replace("\n", "")
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
 
-        return self.bleu(self.preds, self.answers)
+        return self.calculate_bleu(self.preds, self.answers)
 
     def evaluate_pos_tagging(self):
         self.get_preds()
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     parser.add_argument('--task',dest='task', default='sentiment')
     args=parser.parse_args()
 
-    assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
+    # assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
     e = Eval(args.task, args.model, args.prompt_lang)
