@@ -10,6 +10,9 @@ from dataset import FT_Dataset
 from model import FT_Models
 from utils import *
 
+from together import Together
+import time
+
 
 class ZS_Inference:
     def __init__(self, args):
@@ -21,7 +24,15 @@ class ZS_Inference:
         self.API_MODELS = {
             "V3": "deepseek-ai/DeepSeek-V3",
             "R1": "deepseek-ai/DeepSeek-R1",
+            "Q1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+            # "Q14B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" #together
+            "Q14B": "deepseek/deepseek-r1-distill-qwen-14b" #novita
         }
+        self.shuffle = "1" in args.shuffle
+
+        self.TOGETHER_MODELS = ["Q1.5B"]
+        self.NOVITA_MODELS = ["Q14B"]
+        self.NEBIUS_MODELS = ["V3", "R1"]
 
         self.load_model()
         self.load_data()
@@ -36,7 +47,7 @@ class ZS_Inference:
         os.mkdir(self.preds_file_path)
 
     def load_data(self):
-        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="test", test_mode=True)
+        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="train", test_mode=False, shuffle=self.shuffle)
         self.dataset = self.dataset_helper.get_dataset(self.task, self.prompt_lang)
         self.dataset_size = self.dataset_helper.get_size()
 
@@ -59,7 +70,12 @@ class ZS_Inference:
         if self.local:
             self.local_model_inference()
         else:
-            self.api_model_inference()
+            if self.model_name in self.TOGETHER_MODELS:
+                self.api_model_inference_together()
+            elif self.model_name in self.NEBIUS_MODELS:
+                self.api_model_inference_nebius()
+            elif self.model_name in self.NOVITA_MODELS:
+                self.api_model_inference_novita()
 
     def local_model_inference(self):
         for i, prompt in enumerate(self.dataset["text"]):
@@ -78,8 +94,11 @@ class ZS_Inference:
                 logger(response[0].split(":إجابة###")[1].replace(self.tokenizer.eos_token, ""))
             else:
                 logger(response[0].split("### Response:")[1].replace(self.tokenizer.eos_token, ""))
+
             
-    def api_model_inference(self):
+    def api_model_inference_nebius(self):
+        print("CALLING NEBIUS API")
+
         for i, text in enumerate(self.dataset["text"]):
             client = OpenAI(
                 base_url="https://api.studio.nebius.ai/v1/",
@@ -103,16 +122,111 @@ class ZS_Inference:
             logger(res)
             print(f"{i} ------------------------------------------\n")
 
+    def api_model_inference_novita(self):
+        print("CALLING NOVITA API")
+
+        for i, text in enumerate(self.dataset["text"]):
+            # if i < 148: continue
+            if i == 300: break
+
+            q, a, = None, None
+            if self.prompt_lang == "ar":
+                q = text.split(":إجابة###")[0]
+                a = text.split(":إجابة###")[1]
+            else:
+                q = text.split("### Response:")[0]
+                a = text.split("### Response:")[1]
+
+            client = OpenAI(
+                base_url="https://api.novita.ai/v3/openai",
+                api_key="sk_XTZ7jxWmpXeqCiVG-QuFN3jj1FiDLK1EyOVudLleglk",
+            )
+
+            chat_completion_res = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""{q}""",
+                    }
+                ],
+                # max_tokens=1024,
+            )
+
+            res = chat_completion_res.choices[0].message.content
+            logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
+                
+            logger(q)
+            logger("=================================================================================")
+            logger(a)
+            logger("=================================================================================")
+            logger(res)
+
+            print(f"{i} ------------------------------------------\n\n\n")
+    
+    def api_model_inference_together(self):
+        print("CALLING TOGETHER API")
+
+        client = Together()
+        start_time = time.time()
+        requests_sent = 0  # Track requests per minute
+
+        for i, text in enumerate(self.dataset["text"]):
+            # if i < 148: continue
+            if i == 300: break
+
+            q, a, = None, None
+            if self.prompt_lang == "ar":
+                q = text.split(":إجابة###")[0]
+                a = text.split(":إجابة###")[1]
+            else:
+                q = text.split("### Response:")[0]
+                a = text.split("### Response:")[1]
+
+            if requests_sent >= 50:
+                elapsed_time = time.time() - start_time
+                if elapsed_time < 60:
+                    time.sleep(60 - elapsed_time)  # Wait for the remaining time
+                start_time = time.time()  # Reset start time
+                requests_sent = 0  # Reset counter
+
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": f"""{q}"""}],
+                # max_tokens=1024,
+                temperature=0.7,
+                top_p=0.3,
+                top_k=50,
+                repetition_penalty=1,
+                stop=["<｜end▁of▁sentence｜>"],
+                stream=False
+            )
+            res = response.choices[0].message.content
+
+            logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
+                
+            logger(q)
+            logger("=================================================================================")
+            logger(a)
+            logger("=================================================================================")
+            logger(res)
+
+            requests_sent += 1  # Increment request count
+            time.sleep(1.2)  # Ensure ~50 requests per minute
+
+            print(f"{i} ------------------------------------------\n\n\n")
+
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--model',dest='model', default='R1-Q1.5B')
-    parser.add_argument('--prompt_lang',dest='prompt_lang', default='en', help='ar, en')
+    parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
     parser.add_argument('--task',dest='task', default='paraphrasing')
     parser.add_argument('--rank',dest='rank', default='4', help='4, 8, 16')
     parser.add_argument('--load_4bit',dest='load_4bit', default='0')
     parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
+    parser.add_argument('--shuffle', dest='shuffle', default='0')
     args=parser.parse_args()
 
     args.rank = int(args.rank)
@@ -120,7 +234,7 @@ if __name__ == '__main__':
     args.max_seq_length = int(args.max_seq_length)
     args.batch_size = int(args.batch_size)
 
-    assert args.model in ["R1-Q1.5B", "R1-Q7B", "R1-Q14B", "V3", "R1"], "Invalid model!"
+    assert args.model in ["V3", "R1", "Q1.5B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
     assert args.load_4bit in [0, 1], "Invalid Rank!"

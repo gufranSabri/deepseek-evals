@@ -1,24 +1,22 @@
 import os
 import argparse
+from model import FT_Models
 
 import sacrebleu
 from rouge import Rouge
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-from model import FT_Models
-from dataset import FT_Dataset
+import re
 from utils import Logger
 
 class Eval:
-    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", preds_folder="./ft_preds"):
+    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", preds_folder="./zs_preds"):
         self.task = task
         self.model_name = model_name
         self.prompt_lang = prompt_lang
         self.preds_folder = preds_folder
 
-        self.read_congifs()
-        self.load_tokenizer()
-        self.load_data()
+        self.load_model()
 
         self.preds_file_path = os.path.join(self.preds_folder, "_".join([self.model_name, self.task, self.prompt_lang]))
 
@@ -41,52 +39,16 @@ class Eval:
             "rouge": self.rouge
         }
 
+        self.separator = "================================================================================="
+
     def evaluate(self):
         return self.eval_func_map[self.task_eval_map[self.task]]()
+    
 
-    def read_congifs(self):
-        CONFIGS = {
-            "PROMPT_LANG": "",
-            "LOAD_4BIT": -1,
-            "MAX_SEQ_LENGTH": -1,
-        }
+    def load_model(self):
+        self.tokenizer = FT_Models(self.model_name).get_tokenizer("R1-Q1.5B")
+        self.eos_token = self.tokenizer.eos_token
 
-        file_name = "_".join([self.model_name, self.task, self.prompt_lang])+".txt"
-        file_path = os.path.join("./ft_logs", file_name)
-
-        with open(file_path) as log_file:
-            configs = log_file.readlines()
-
-        count = len(CONFIGS.keys())
-        for c in configs:
-            if c.split(":")[0] in CONFIGS.keys():
-                c = c.replace("\n", "")
-                try:
-                    CONFIGS[c.split(":")[0]] = int(c.split(":")[1].strip())
-                except:
-                    CONFIGS[c.split(":")[0]] = c.split(":")[1].strip()
-                count -= 1
-
-            if count == 0:
-                break
-
-        self.CONFIGS = CONFIGS
-
-    def load_data(self):
-        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="test")
-        self.dataset = self.dataset_helper.get_dataset(self.task, self.CONFIGS["PROMPT_LANG"])
-        self.dataset_size = self.dataset_helper.get_size()
-
-        self.answers = list(self.dataset["text"])
-
-        for i in range(len(self.answers)):
-            if self.prompt_lang == "ar":
-                self.answers[i] = self.answers[i].split(":إجابة###")[1]
-            else:
-                self.answers[i] = self.answers[i].split("### Response:")[1]
-
-    def load_tokenizer(self):
-        self.tokenizer = FT_Models(self.model_name).get_tokenizer(self.model_name)
 
     def get_preds(self):
         preds_folder = "_".join([self.model_name, self.task, self.prompt_lang])
@@ -97,34 +59,84 @@ class Eval:
             txt_files.remove("scores.txt")
         txt_files = sorted(txt_files, key=lambda x: int(x.split('.')[0]))
 
-        preds = []
+        self.preds = []
+        self.answers = []
+        # for i in range(len(txt_files)):
+        #     with open(os.path.join(preds_dir, txt_files[i])) as pred_file:
+        #         pred = pred_file.readlines()
+
+        #     answer_bounds = []
+        #     for i, p in enumerate(pred):
+        #         if p in [self.separator, self.separator + "\n"]:
+        #             answer_bounds.append(i)
+
+        #     answer = " ".join(pred[answer_bounds[0]+1: answer_bounds[1]])
+        #     self.answers.append(answer.replace("\n", ""))
+
+        #     pred = " ".join(pred[answer_bounds[1]+1:]).replace("\n", "")
+        #     answer_match = re.search(r"<answer>(.*?)</answer>", pred, re.DOTALL)
+        #     if answer_match:
+        #         self.preds.append(answer_match.group(1).strip())
+        #     else:
+        #         think_match = re.search(r"</think>(.*)", pred, re.DOTALL)
+        #         if think_match:
+        #             self.preds.append(think_match.group(1).strip())
+        #         else:
+        #             self.preds.append("<none>")
+
         for i in range(len(txt_files)):
             with open(os.path.join(preds_dir, txt_files[i])) as pred_file:
                 pred = pred_file.readlines()
 
-            preds.append(pred)
+            answer_bounds = []
+            for i, p in enumerate(pred):
+                if p in [self.separator, self.separator + "\n"]:
+                    answer_bounds.append(i)
 
-        self.preds = preds
+            answer = " ".join(pred[answer_bounds[0]+1: answer_bounds[1]])
+            self.answers.append(answer.replace("\n", ""))
+
+            pred = " ".join(pred[answer_bounds[1]+1:]).replace("\n", "")
+
+            # Look for </think> first to extract only what comes after it
+            think_match = re.search(r"</think>(.*)", pred, re.DOTALL)
+            if think_match:
+                pred_after_think = think_match.group(1).strip()
+            else:
+                pred_after_think = pred
+
+            # Search for answer in the extracted portion
+            answer_match = re.search(r"<answer>(.*?)</answer>", pred_after_think, re.DOTALL)
+            if answer_match:
+                self.preds.append(answer_match.group(1).strip())
+            else:
+                self.preds.append("<none>")
+
 
     def classification(self):
         self.get_preds()
         self.answers = self.answers[:len(self.preds)]
 
+        def extract_first_digit(text):
+            match = re.search(r"\d", text)
+            return match.group(0) if match else text 
+
         for i in range(len(self.preds)):
-            self.preds[i] = self.preds[i][1][0]
+            self.preds[i] = extract_first_digit(self.preds[i].replace("\n", "").replace(" ", "").strip())
+            self.answers[i] = extract_first_digit(self.answers[i].replace("\n", "").replace(self.eos_token, ""))
 
-        for i in range(len(self.answers)):
-            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+        # for p,a in zip(self.preds, self.answers):
+        #     print(p,a)
 
-        return self.calculate_classification(self.preds, self.answers)
+        return self.calculate_F1(self.preds, self.answers)
 
     def bleu(self):
         self.get_preds()
         self.answers = self.answers[:len(self.preds)]
 
         for i in range(len(self.preds)):
-            self.preds[i] = self.preds[i][1].replace("\n", "")
-            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+            self.preds[i] = self.preds[i].replace("\n", "")
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.eos_token, "")
 
         return self.calculate_bleu(self.preds, self.answers)
 
@@ -158,12 +170,12 @@ class Eval:
         self.answers = self.answers[:len(self.preds)]
 
         for i in range(len(self.preds)):
-            self.preds[i] = self.preds[i][1].replace("\n", "")
-            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+            self.preds[i] = self.preds[i].replace("\n", "")
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.eos_token, "")
 
         return self.calculate_rouge(self.preds, self.answers)
 
-    def calculate_classification(self, preds, answers):
+    def calculate_F1(self, preds, answers):
         accuracy = accuracy_score(preds, answers)
         precision = precision_score(preds, answers, average='macro')
         recall = recall_score(preds, answers, average='macro')
