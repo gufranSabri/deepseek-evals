@@ -173,65 +173,18 @@ class FT_Dataset:
             "wsd_test": self.format_prompt_wsd,
         }
 
+        # =============================================
         self.task_instructions = {
-           "sentiment": "Classify the sentiment of this sentence as 0 for Negative or 1 for Positive. Give the answer in arabic.",
-           "summarization": "Summarize the following text in one sentence. Give the answer in arabic.",
-           "paraphrasing": "Paraphrase the following text while keeping the meaning intact. Give the answer in arabic.",
-           "transliteration": "Convert the following text written in Arabizi into Arabic script. Give the answer in arabic.",
-           "GQA": "Generate an informative answer for the following question. Give the answer in arabic.",
-           "grammar_correction": "Correct the grammatical errors in this sentence. Give the answer in arabic.",
-           "translation": "Translate the following English sentence into Arabic. Give the answer in arabic.",
+            "summarization": "Can you summarize the following text in one sentence? Give the answer in arabic.",
+            "paraphrasing": "Paraphrase the following text while keeping the meaning intact. Give the answer in arabic.",
         }
-
-        # self.task_instructions = {
-        #     "sentiment": "What sentiment does this text express? Type '1' for Positive and '0' for Negative. Give the answer in arabic.",
-        #     "summarization": "Can you summarize the following text in one sentence? Give the answer in arabic.",
-        #     "paraphrasing": "Can you paraphrase the following text while preserving the meaning? Give the answer in arabic.",
-        #     "transliteration": "Can you convert the following text into Arabic script? Give the answer in arabic.",
-        #     "GQA": "What is the answer for the following question? Give the answer in arabic.",
-        #     "grammar_correction": "Does this sentence have any grammatical errors? If yes, provide the correction. Otherwise, re-write the sentence. Give the answer in arabic.",
-        #     "translation": "What is the translation of this sentence from English to Arabic? Give the answer in arabic.",
-        # }
-
-        # self.task_instructions = {
-        #     "sentiment": "You are an expert in sentiment analysis and natural language processing. Analyze the given text and answer 1 if the sentiment is Positive and 0 if the sentiment is Negative. Give the answer in arabic.",
-        #     "summarization": "You are a professional text summarizer with expertise in extracting key information. Read the given text and generate a one-sentence concise and coherent summary that preserves the main ideas and important details. Give the answer in arabic.",
-        #     "paraphrasing": "You are a language expert skilled in rewriting text while maintaining its original meaning. Rewrite the following passage in arabic using different words and sentence structures while keeping the meaning intact. Give the answer in arabic.",
-        #     "transliteration": "You are an expert in Arabizi transliteration. Convert the following text from Arabizi into Arabic script. Give the answer in arabic.",
-        #     "GQA": "You are an advanced knowledge-based AI trained in answering general questions across multiple domains. Provide an accurate, well-structured, and informative response to the following question. Give the answer in arabic.",
-        #     "grammar_correction": "You are a professional proofreader. Read the following sentence and correct any grammatical mistakes. Give the answer in arabic.",
-        #     "translation": "What is the translation of this sentence from English to Arabic? Give the answer in arabic.",
-        # }
 
         self.task_instructions_ar = {
-           "sentiment": "صنف مشاعر هذه الجملة كـ 0 إذا كانت سلبية و 1 إذا كانت إيجابية. قم بالاجابة باللغة العربية ",
-           "summarization": "لخص النص التالي في جملة واحدة. قم بالاجابة باللغة العربية ",
-           "paraphrasing": "أعد صياغة النص التالي مع الحفاظ على المعنى كما هو. قم بالاجابة باللغة العربية ",
-           "transliteration": "حوّل النص التالي المكتوب بالحروف اللاتينية وفقًا لأسلوب العربيزي إلى الحروف العربية. قم بالاجابة باللغة العربية ",
-           "GQA": "قم بإنشاء إجابة توضيحية للسؤال التالي. قم بالاجابة باللغة العربية ",
-           "grammar_correction": "صحح الأخطاء النحوية في هذه الجملة. قم بالاجابة باللغة العربية ",
-           "translation": "ترجم الجملة الإنجليزية التالية إلى اللغة العربية. قم بالاجابة باللغة العربية ",
+            "sentiment": "صنف مشاعر هذه الجملة كـ 0 إذا كانت سلبية و 1 إذا كانت إيجابية. قم بالاجابة باللغة العربية ",
+            "translation": "أنت مترجم محترف تتقن اللغتين الإنجليزية والعربية. ترجم الجملة التالية إلى اللغة العربية مع الالتزام بالقواعد اللغوية الصحيحة والحفاظ على السياق السليم. قم بالاجابة باللغة العربية ",
+            "transliteration": "أنت خبير في تحويل النصوص المكتوبة بالأحرف اللاتينية وفقًا لأسلوب العربيزي. حوّل النص التالي إلى الحروف العربية. قم بالاجابة باللغة العربية ",
         }
-
-        # self.task_instructions_ar = {
-        #    "sentiment": "هل تعبر هذه الجملة عن مشاعر إيجابية أم سلبية؟ اكتب '1' إذا كانت إيجابية و'0' إذا كانت سلبية. قم بالاجابة باللغة العربية ",
-        #    "summarization": "هل يمكنك تلخيص النص التالي في جملة واحدة؟ قم بالاجابة باللغة العربية ",
-        #    "paraphrasing": "هل يمكنك إعادة صياغة النص التالي دون تغيير معناه؟ قم بالاجابة باللغة العربية ",
-        #    "transliteration": "هل يمكنك تحويل النص التالي إلى الحروف العربية؟ قم بالاجابة باللغة العربية ",
-        #    "GQA": "ما هي الإجابة لهذا السؤال؟ قم بالاجابة باللغة العربية ",
-        #    "grammar_correction": "هل تحتوي هذه الجملة على أخطاء نحوية؟ إذا كانت الإجابة نعم، قم بتصحيح الجملة. إذا لم تحتوِ على أخطاء، أعد كتابة الجملة. قم بالاجابة باللغة العربية ",
-        #    "translation": "ماهي ترجمة هذه الجملة باللغة الانجليزية الى العربية؟. قم بالاجابة باللغة العربية ",
-        # }
-
-        # self.task_instructions_ar = {
-        #     "sentiment": "أنت خبير في تحليل المشاعر ومعالجة اللغة الطبيعية. قم بتحليل النص المعطى وأجب بـ 1 إذا كانت المشاعر إيجابية و0 إذا كانت المشاعر سلبية. قم بالاجابة باللغة العربية ",
-        #     "summarization": "أنت متخصص في تلخيص النصوص ولديك خبرة في استخراج المعلومات الأساسية. اقرأ النص المقدم وأنشئ ملخصًا موجزًا ومتماسكًا في جملة واحدة يحافظ على الأفكار الرئيسية والتفاصيل المهمة. قم بالاجابة باللغة العربية ",
-        #     "paraphrasing": "أنت خبير لغوي ماهر في إعادة صياغة النص مع الحفاظ على معناه الأصلي. أعد كتابة المقطع التالي باستخدام كلمات وهياكل جمل مختلفة مع الحفاظ على المعنى كما هو. قم بالاجابة باللغة العربية ",
-        #     "transliteration": "أنت خبير في تحويل النصوص المكتوبة بالأحرف اللاتينية وفقًا لأسلوب العربيزي. حوّل النص التالي إلى الحروف العربية. قم بالاجابة باللغة العربية ",
-        #     "GQA": "أنت ذكاء اصطناعي متقدم قائم على المعرفة ومدرب على الإجابة على الأسئلة العامة عبر مجالات متعددة. قدم إجابة دقيقة، ومنظمة للسؤال التالي. قم بالاجابة باللغة العربية ",
-        #     "grammar_correction": "أنت مدقق لغوي محترف. اقرأ الجملة التالية وصحح أي أخطاء نحوية. قم بالاجابة باللغة العربية ",
-        #     "translation": "أنت مترجم محترف تتقن اللغتين الإنجليزية والعربية. ترجم الجملة التالية إلى اللغة العربية مع الالتزام بالقواعد اللغوية الصحيحة والحفاظ على السياق السليم. قم بالاجابة باللغة العربية ",
-        # }
+        # =============================================
 
         self.size = -1
 

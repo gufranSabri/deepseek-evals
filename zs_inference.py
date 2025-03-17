@@ -21,8 +21,11 @@ class ZS_Inference:
         self.prompt_lang = args.prompt_lang
         self.local = True
         self.args = args
+        self.shots = args.shots
+
         self.API_MODELS = {
-            "V3": "deepseek-ai/DeepSeek-V3",
+            # "V3": "deepseek-ai/DeepSeek-V3", #nebius
+            "V3": "deepseek/deepseek_v3", #novita
             "R1": "deepseek-ai/DeepSeek-R1",
             "Q1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
             # "Q14B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" #together
@@ -31,8 +34,8 @@ class ZS_Inference:
         self.shuffle = "1" in args.shuffle
 
         self.TOGETHER_MODELS = ["Q1.5B"]
-        self.NOVITA_MODELS = ["Q14B"]
-        self.NEBIUS_MODELS = ["V3", "R1"]
+        self.NOVITA_MODELS = ["V3", "Q14B"]
+        self.NEBIUS_MODELS = [ "R1"]
 
         self.load_model()
         self.load_data()
@@ -47,7 +50,7 @@ class ZS_Inference:
         os.mkdir(self.preds_file_path)
 
     def load_data(self):
-        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="train", test_mode=False, shuffle=self.shuffle)
+        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="train", test_mode=False, shuffle=self.shuffle, shots=self.shots)
         self.dataset = self.dataset_helper.get_dataset(self.task, self.prompt_lang)
         self.dataset_size = self.dataset_helper.get_size()
 
@@ -127,7 +130,7 @@ class ZS_Inference:
 
         for i, text in enumerate(self.dataset["text"]):
             # if i < 148: continue
-            if i == 300: break
+            # if i == 300: break
 
             q, a, = None, None
             if self.prompt_lang == "ar":
@@ -227,12 +230,14 @@ if __name__ == '__main__':
     parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--shuffle', dest='shuffle', default='0')
+    parser.add_argument('--shots', dest='shots', default='0')
     args=parser.parse_args()
 
     args.rank = int(args.rank)
     args.load_4bit = int(args.load_4bit)
     args.max_seq_length = int(args.max_seq_length)
     args.batch_size = int(args.batch_size)
+    args.shots = int(args.shots)
 
     assert args.model in ["V3", "R1", "Q1.5B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
