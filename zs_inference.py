@@ -4,7 +4,6 @@ import shutil
 import argparse
 from openai import OpenAI
 from tqdm import tqdm
-from unsloth import FastLanguageModel
 
 from dataset import FT_Dataset
 from model import FT_Models
@@ -22,6 +21,8 @@ class ZS_Inference:
         self.local = True
         self.args = args
         self.shots = args.shots
+        self.save_path = args.save_path
+        self.call_limit = args.call_limit
 
         self.API_MODELS = {
             # "V3": "deepseek-ai/DeepSeek-V3", #nebius
@@ -31,26 +32,27 @@ class ZS_Inference:
             # "Q14B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" #together
             "Q14B": "deepseek/deepseek-r1-distill-qwen-14b" #novita
         }
-        self.shuffle = "1" in args.shuffle
+        self.shuffle = self.model_name in ["Q14B", "Q1.5B"]
+        self.split = "test" if self.model_name in ["V3", "R1"] else "train"
 
         self.TOGETHER_MODELS = ["Q1.5B"]
-        self.NOVITA_MODELS = ["V3", "Q14B"]
-        self.NEBIUS_MODELS = [ "R1"]
+        self.NOVITA_MODELS = ["V3", "Q14B", "R1"]
+        self.NEBIUS_MODELS = []
 
         self.load_model()
         self.load_data()
 
-        if not os.path.exists("./zs_preds"):
-            os.mkdir("./zs_preds")
+        if not os.path.exists(self.save_path):
+            os.mkdir(self.save_path)
 
-        self.preds_file_path = os.path.join("./zs_preds", "_".join([self.model_name, self.task, self.prompt_lang]))
+        self.preds_file_path = os.path.join(self.save_path, "_".join([self.model_name, self.task, self.prompt_lang]))
         if os.path.exists(self.preds_file_path):
             shutil.rmtree(self.preds_file_path)
 
         os.mkdir(self.preds_file_path)
 
     def load_data(self):
-        self.dataset_helper = FT_Dataset(self.tokenizer.eos_token, split="train", test_mode=False, shuffle=self.shuffle, shots=self.shots)
+        self.dataset_helper = FT_Dataset("<｜end▁of▁sentence｜>", split=self.split, test_mode=False, shuffle=self.shuffle, shots=self.shots)
         self.dataset = self.dataset_helper.get_dataset(self.task, self.prompt_lang)
         self.dataset_size = self.dataset_helper.get_size()
 
@@ -60,8 +62,6 @@ class ZS_Inference:
         else:
             self.local = False
             self.model = self.API_MODELS[self.model_name]
-            self.tokenizer = FT_Models(self.model_name).get_tokenizer("R1-Q1.5B")
-
             print("Will call API on", self.model)
     
     def load_local_model(self):
@@ -75,8 +75,8 @@ class ZS_Inference:
         else:
             if self.model_name in self.TOGETHER_MODELS:
                 self.api_model_inference_together()
-            elif self.model_name in self.NEBIUS_MODELS:
-                self.api_model_inference_nebius()
+            # elif self.model_name in self.NEBIUS_MODELS:
+            #     self.api_model_inference_nebius()
             elif self.model_name in self.NOVITA_MODELS:
                 self.api_model_inference_novita()
 
@@ -94,43 +94,44 @@ class ZS_Inference:
 
             logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
             if self.prompt_lang == "ar":
-                logger(response[0].split(":إجابة###")[1].replace(self.tokenizer.eos_token, ""))
+                logger(response[0].split(":إجابة###")[1].replace("<｜end▁of▁sentence｜>", "").replace("<｜end▁of▁sentence｜>", ""))
             else:
-                logger(response[0].split("### Response:")[1].replace(self.tokenizer.eos_token, ""))
+                logger(response[0].split("### Response:")[1].replace("<｜end▁of▁sentence｜>", "").replace("<｜end▁of▁sentence｜>", ""))
 
             
-    def api_model_inference_nebius(self):
-        print("CALLING NEBIUS API")
+    # def api_model_inference_nebius(self):
+    #     print("CALLING NEBIUS API")
 
-        for i, text in enumerate(self.dataset["text"]):
-            client = OpenAI(
-                base_url="https://api.studio.nebius.ai/v1/",
-                api_key=os.environ.get("OPENAI_API_KEY"),
-            )
+    #     for i, text in enumerate(self.dataset["text"]):
+    #         if i == self.call_limit: break
 
-            completion = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"""{text}"""
-                    }
-                ],
-                temperature=0
-            )
+    #         client = OpenAI(
+    #             base_url="https://api.studio.nebius.ai/v1/",
+    #             api_key=os.environ.get("OPENAI_API_KEY"),
+    #         )
 
-            j = completion.to_dict()
-            res = j["choices"][0]["message"]["content"]
-            logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
-            logger(res)
-            print(f"{i} ------------------------------------------\n")
+    #         completion = client.chat.completions.create(
+    #             model=self.model,
+    #             messages=[
+    #                 {
+    #                     "role": "user",
+    #                     "content": f"""{text}"""
+    #                 }
+    #             ],
+    #             temperature=0
+    #         )
+
+    #         j = completion.to_dict()
+    #         res = j["choices"][0]["message"]["content"]
+    #         logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
+    #         logger(res)
+    #         print(f"{i} ------------------------------------------\n")
 
     def api_model_inference_novita(self):
         print("CALLING NOVITA API")
 
         for i, text in enumerate(self.dataset["text"]):
-            # if i < 148: continue
-            # if i == 300: break
+            if i == self.call_limit: break
 
             q, a, = None, None
             if self.prompt_lang == "ar":
@@ -143,7 +144,8 @@ class ZS_Inference:
             client = OpenAI(
                 base_url="https://api.novita.ai/v3/openai",
                 api_key="sk_XTZ7jxWmpXeqCiVG-QuFN3jj1FiDLK1EyOVudLleglk",
-            )
+            ) 
+
 
             chat_completion_res = client.chat.completions.create(
                 model=self.model,
@@ -175,10 +177,9 @@ class ZS_Inference:
         requests_sent = 0  # Track requests per minute
 
         for i, text in enumerate(self.dataset["text"]):
-            # if i < 148: continue
-            if i == 300: break
+            if i == self.call_limit: break
 
-            q, a, = None, None
+            q, a = None, None
             if self.prompt_lang == "ar":
                 q = text.split(":إجابة###")[0]
                 a = text.split(":إجابة###")[1]
@@ -229,8 +230,9 @@ if __name__ == '__main__':
     parser.add_argument('--load_4bit',dest='load_4bit', default='0')
     parser.add_argument('--max_seq_length', dest='max_seq_length', default='2048')
     parser.add_argument('--batch_size', dest='batch_size', default='2')
-    parser.add_argument('--shuffle', dest='shuffle', default='0')
     parser.add_argument('--shots', dest='shots', default='0')
+    parser.add_argument('--save_path', dest='save_path', default='./zs_preds')
+    parser.add_argument('--call_limit', dest='call_limit', default="10000")
     args=parser.parse_args()
 
     args.rank = int(args.rank)
@@ -238,6 +240,7 @@ if __name__ == '__main__':
     args.max_seq_length = int(args.max_seq_length)
     args.batch_size = int(args.batch_size)
     args.shots = int(args.shots)
+    args.call_limit = int(args.call_limit)
 
     assert args.model in ["V3", "R1", "Q1.5B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
