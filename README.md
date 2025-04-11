@@ -15,7 +15,9 @@ pip install transformers
 ```
 
 ## Data-Prep
-Please review the `dataset.py` file
+Download data from <a href="https://kfupmedusa-my.sharepoint.com/:u:/g/personal/g202302610_kfupm_edu_sa/EfdWKQ54vFpMtNvzCJDcbbMBd9ko5-iuXUeQQXkwcARE1A?e=wlpl71">here</a> and place in `./data` folder
+
+For more information please review the `dataset.py` file
 
 ## Scripts
-Please review `scripts` folder for zero shot, few shot, fine-tuning scripts and evaluation scripts.
+Please review `scripts` folder for zero shot, few shot, fine-tuning scripts.
