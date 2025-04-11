@@ -6,7 +6,7 @@ from openai import OpenAI
 from tqdm import tqdm
 
 from dataset import FT_Dataset
-from model import FT_Models
+# from model import FT_Models
 from utils import *
 
 from together import Together
@@ -46,10 +46,10 @@ class ZS_Inference:
             os.mkdir(self.save_path)
 
         self.preds_file_path = os.path.join(self.save_path, "_".join([self.model_name, self.task, self.prompt_lang]))
-        if os.path.exists(self.preds_file_path):
-            shutil.rmtree(self.preds_file_path)
+        # if os.path.exists(self.preds_file_path):
+        #     shutil.rmtree(self.preds_file_path)
 
-        os.mkdir(self.preds_file_path)
+        # os.mkdir(self.preds_file_path)
 
     def load_data(self):
         self.dataset_helper = FT_Dataset("<｜end▁of▁sentence｜>", split=self.split, test_mode=False, shuffle=self.shuffle, shots=self.shots)
@@ -131,6 +131,7 @@ class ZS_Inference:
         print("CALLING NOVITA API")
 
         for i, text in enumerate(self.dataset["text"]):
+            if i<1869: continue
             if i == self.call_limit: break
 
             q, a, = None, None

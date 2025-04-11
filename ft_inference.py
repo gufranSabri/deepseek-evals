@@ -7,10 +7,12 @@ from utils import Logger
 from unsloth import FastLanguageModel
 
 class FT_Inference:
-    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", models_dir="./models", logs_dir="./logs"):
+    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", models_dir="./ft_models", logs_dir="./ft_logs"):
         self.task = task
         self.model_name = model_name
         self.prompt_lang = prompt_lang
+        self.models_dir = models_dir
+        self.logs_dir = logs_dir
 
         self.read_congifs()
         self.load_model()
@@ -24,6 +26,8 @@ class FT_Inference:
             shutil.rmtree(self.preds_file_path)
 
         os.mkdir(self.preds_file_path)
+
+        
 
     def generate_predictions(self):
         for i, prompt in enumerate(self.dataset["text"]):
@@ -56,7 +60,7 @@ class FT_Inference:
         }
 
         file_name = "_".join([self.model_name, self.task, self.prompt_lang])+".txt"
-        file_path = os.path.join("./logs", file_name)
+        file_path = os.path.join(self.logs_dir, file_name)
 
         with open(file_path) as log_file:
             configs = log_file.readlines()
@@ -78,7 +82,7 @@ class FT_Inference:
 
     def load_model(self):
         file_name = "_".join([self.model_name, self.task, self.prompt_lang])
-        model_path = os.path.join("./models", file_name)
+        model_path = os.path.join(self.models_dir, file_name)
 
         base_model_path = os.path.join(model_path, "base_model")
         lora_adapter_path = os.path.join(model_path, "lora_adapter")

@@ -73,7 +73,7 @@ class FT_Dataset:
             "dialect_train": "./data/sarc_dab_train.csv",
             "dialect_test":  "./data/sarc_dab_test.csv",
 
-            "hate_train": "./data/off_hs_balanced.csv",
+            "hate_train": "./data/off_hs_train.csv",
             "hate_test": "./data/off_hs_test.csv",
 
             "offensive_train": "./data/off_hs_train.csv",
@@ -195,7 +195,6 @@ class FT_Dataset:
         self.task_instructions = {
             "summarization": "Can you summarize the following text in one sentence? Give the answer in arabic.",
             "paraphrasing": "Paraphrase the following text while keeping the meaning intact. Give the answer in arabic.",
-            "sarcasm": "Classify this text as 0 for Not Sarcastic or 1 for Sarcastic",
             "offensive": "Does this text contain offensive language? Type '1' for Offensive and '0' for Not Offensive.",
             "GQA":"What is the answer for the following question?",
             
@@ -206,7 +205,7 @@ class FT_Dataset:
 
         self.task_instructions_ar = {
             "sentiment": "صنف مشاعر هذه الجملة كـ 0 إذا كانت سلبية و 1 إذا كانت إيجابية. قم بالاجابة باللغة العربية ",
-            "translation": "أنت مترجم محترف تتقن اللغتين الإنجليزية والعربية. ترجم الجملة التالية إلى اللغة العربية مع الالتزام بالقواعد اللغوية الصحيحة والحفاظ على السياق السليم. قم بالاجابة باللغة العربية ",
+            "translation": "ترجم الجملة الإنجليزية التالية إلى اللغة العربية",
             "transliteration": "أنت خبير في تحويل النصوص المكتوبة بالأحرف اللاتينية وفقًا لأسلوب العربيزي. حوّل النص التالي إلى الحروف العربية. قم بالاجابة باللغة العربية ",
             "dialect": "هل كُتب هذا النص باللغة العربية الفصحى أم باللهجة العامية؟ اكتب '0' إذا كان بالفصحى و'1' إذا كان بالعامية.",
             "stance": "حدد الموقف بين الجملتين المعطيتين. اختر أحد التصنيفات التالية: (0) اختلاف، (1) اتفاق، (2) غير واضح/غير مرتبط.",
@@ -215,6 +214,7 @@ class FT_Dataset:
             "sqs": "هل تمت إعادة صياغة إحدى الجملتين لتكون مكافئة للأخرى؟ أجب بـ '1' إذا كانتا معادتي الصياغة و'0' إذا لم تكونا كذلك.",
             "hate": "صنف هذا النص كـ 0 إذا لم يكن يحتوي على خطاب كراهية و 1 إذا كان يحتوي على خطاب كراهية",
             "pos_tagging": "ما هو النوع الصرفي الصحيح لكل كلمة في هذه الجملة؟ حدد الوسم المناسب لكل كلمة من بين الخيارات التالية: ['NOUN', 'PUNCT', 'ADP', 'NUM', 'SYM', 'SCONJ', 'ADJ', 'PART', 'DET', 'CCONJ', 'PROPN', 'PRON', 'X', 'ADV', 'INTJ', 'VERB', 'AUX'].",
+            "sarcasm": "صنف هذا النص كـ 0 إذا لم يكن ساخراً و 1 إذا كان ساخراً",
 
             "grammar": "صحح الأخطاء النحوية في هذه الجملة",
             # "grammar": "هل تحتوي هذه الجملة على أخطاء نحوية؟ إذا كانت الإجابة نعم، قم بتصحيح الجملة. ان كانت لا تحتوي على اخطاء قم باعادة كتابة الجملة.",
@@ -336,7 +336,7 @@ class FT_Dataset:
             outputs.append(output)
             tokenized_sents[i] = " ".join(tokenized_sents[i])
 
-        example = ""
+        examples = ""
         if self.shots > 0:
             examples = self.e_head
             indices = np.random.choice(len(tokenized_sents), self.shots, replace=False)
@@ -709,7 +709,7 @@ class FT_Dataset:
         return dataset
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # FT_Dataset("", split="test", shots=3).get_dataset("sentiment", "ar")
     # FT_Dataset("", split="test", shots=3).get_dataset("pos_tagging", "ar")
     # FT_Dataset("", split="test", shots=3).get_dataset("summarization", "en")
@@ -724,5 +724,5 @@ if __name__ == "__main__":
     # FT_Dataset("", split="test", shots=3).get_dataset("sarcasm", "en")
     # FT_Dataset("", split="test", shots=3).get_dataset("dialect", "ar")
     # FT_Dataset("", split="test", shots=3).get_dataset("hate", "ar")
-    FT_Dataset("", split="test", shots=3).get_dataset("offensive", "en")
+    # FT_Dataset("", split="test", shots=3).get_dataset("offensive", "en")
 

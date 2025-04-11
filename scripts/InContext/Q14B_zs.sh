@@ -1,7 +1,7 @@
 python zs_inference.py --task stance --model Q14B --prompt_lang ar --save_path ./zs_preds #379
 python zs_inference.py --task pos_tagging --model Q14B --prompt_lang ar --save_path ./zs_preds #680
 python zs_inference.py --task hate --model Q14B --prompt_lang ar --save_path ./zs_preds #1000
-python zs_inference.py --task sarcasm --model Q14B --prompt_lang en --save_path ./zs_preds #2110
+python zs_inference.py --task sarcasm --model Q14B --prompt_lang ar --save_path ./zs_preds #2110
 python zs_inference.py --task paraphrasing --model Q14B --prompt_lang en --save_path ./zs_preds #1010
 python zs_inference.py --task claim --model Q14B --prompt_lang ar --save_path ./zs_preds #456
 python zs_inference.py --task GQA --model Q14B --prompt_lang en --save_path ./zs_preds #921

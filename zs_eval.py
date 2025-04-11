@@ -245,6 +245,13 @@ class Eval:
             self.preds[i] = self.preds[i].replace("\n", "")
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.eos_token, "").replace("<｜end▁of▁sentence｜>", "")
 
+
+        print(self.preds[:5])
+        print()
+        print(self.answers[:5])
+
+        exit()
+
         return self.calculate_rouge(self.preds, self.answers)
 
     def calculate_F1(self, preds, answers):

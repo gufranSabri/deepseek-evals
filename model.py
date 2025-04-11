@@ -12,9 +12,9 @@ class FT_Models:
         self.logger = logger
 
         self.models = {
-            "R1-Q1.5B": "unsloth/DeepSeek-R1-Distill-Qwen-1.5B",
-            "R1-Q7B": "unsloth/DeepSeek-R1-Distill-Qwen-7B",
-            "R1-Q14B": "unsloth/DeepSeek-R1-Distill-Qwen-14B",
+            "Q1.5B": "unsloth/DeepSeek-R1-Distill-Qwen-1.5B",
+            "Q7B": "unsloth/DeepSeek-R1-Distill-Qwen-7B",
+            "Q14B": "unsloth/DeepSeek-R1-Distill-Qwen-14B",
         }
 
     def get_tokenizer(self, model_name):

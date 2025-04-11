@@ -9,6 +9,8 @@ from model import FT_Models
 from dataset import FT_Dataset
 from utils import Logger
 
+from evaluate import load
+
 class Eval:
     def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", preds_folder="./ft_preds"):
         self.task = task
@@ -24,7 +26,7 @@ class Eval:
 
         self.task_eval_map = {
             "sentiment": "classification",
-            "pos_tagging": "classification",
+            "pos_tagging": "evaluate_postagging",
             "paraphrase_detection": "classification",
             "claim": "classification",
             "stance": "classification",
@@ -33,12 +35,20 @@ class Eval:
             "transliteration": "bleu",
             "translation": "bleu",
             "summarization": "rouge",
+            "sarcasm": "classification",
+            "dialect": "classification",
+            "hate": "classification",
+            "offensive": "classification",
+            "sqs": "classification",
+            "GQA": "squad"
         }
 
         self.eval_func_map = {
             "classification": self.classification,
             "bleu": self.bleu,
-            "rouge": self.rouge
+            "rouge": self.rouge,
+            "squad": self.squad,
+            "evaluate_postagging": self.evaluate_pos_tagging,
         }
 
     def evaluate(self):
@@ -105,6 +115,45 @@ class Eval:
             preds.append(pred)
 
         self.preds = preds
+    
+
+    def squad(self):
+        self.get_preds()
+        self.answers = self.answers[:len(self.preds)]
+
+        predictions = []
+        references = []
+
+        for i in range(len(self.preds)):
+            self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "").replace("<｜end▁of▁sentence｜>", "")
+
+            start = self.answers[i].find("[")
+            end = self.answers[i].rfind("]")
+            self.answers[i] = self.answers[i][start+1:end].replace('"', "")
+
+            for j in range(len(self.preds[i])):
+                self.preds[i][j] = self.preds[i][j].replace("\n", "").replace("[", "").replace("]", "")
+            self.preds[i] = " ".join(self.preds[i])
+
+            print(self.preds[i])
+            print(self.answers[i])
+            print()
+
+            predictions.append({"id": str(i), "prediction_text": self.preds[i]})
+            references.append({"id": str(i), "answers": {"text": [self.answers[i]], "answer_start": [0]}})
+
+        return self.calculate_squad(predictions, references)
+
+
+    def calculate_squad(self, preds, answers):
+        squad_metric = load("squad")
+
+        results = squad_metric.compute(predictions=preds, references=answers)
+
+        logger = Logger(os.path.join(self.preds_file_path, f"scores.txt"))
+        logger(f"F1 Score: {str(results['f1'])}")
+
+        return results['f1']
 
     def classification(self):
         self.get_preds()
@@ -157,9 +206,18 @@ class Eval:
         self.get_preds()
         self.answers = self.answers[:len(self.preds)]
 
+
+
         for i in range(len(self.preds)):
             self.preds[i] = self.preds[i][1].replace("\n", "")
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
+
+        # print(self.preds[:5])
+        # print()
+        # print(self.answers[:5])
+
+        # exit()
+
 
         return self.calculate_rouge(self.preds, self.answers)
 
@@ -196,10 +254,16 @@ class Eval:
         rouge = Rouge()
         abstractive_rouge_1_scores, abstractive_rouge_2_scores, abstractive_rouge_l_scores = [], [], []
         for g_text, t_text in zip(preds, answers):
-            scores = rouge.get_scores(g_text, t_text)[0]
-            abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
-            abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
-            abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
+            try:
+                scores = rouge.get_scores(g_text, t_text)[0]
+                abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
+                abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
+                abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
+            except Exception as e:
+                scores = rouge.get_scores(g_text[:1000], t_text[:1000])[0]
+                abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
+                abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
+                abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
 
         avg_abstractive_rouge_1 = sum(abstractive_rouge_1_scores) / len(abstractive_rouge_1_scores) if abstractive_rouge_1_scores else 0
         avg_abstractive_rouge_2 = sum(abstractive_rouge_2_scores) / len(abstractive_rouge_2_scores) if abstractive_rouge_2_scores else 0
