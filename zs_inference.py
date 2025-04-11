@@ -131,7 +131,6 @@ class ZS_Inference:
         print("CALLING NOVITA API")
 
         for i, text in enumerate(self.dataset["text"]):
-            if i<1869: continue
             if i == self.call_limit: break
 
             q, a, = None, None
