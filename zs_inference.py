@@ -27,7 +27,8 @@ class ZS_Inference:
         self.API_MODELS = {
             # "V3": "deepseek-ai/DeepSeek-V3", #nebius
             "V3": "deepseek/deepseek_v3", #novita
-            "R1": "deepseek-ai/DeepSeek-R1",
+            # "R1": "deepseek-ai/DeepSeek-R1",
+            "R1": "deepseek-reasoner",
             "Q1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
             # "Q14B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" #together
             "Q14B": "deepseek/deepseek-r1-distill-qwen-14b" #novita
@@ -37,6 +38,7 @@ class ZS_Inference:
 
         self.TOGETHER_MODELS = ["Q1.5B"]
         self.NOVITA_MODELS = ["V3", "Q14B", "R1"]
+        self.DEEPSEEK_MODELS = ["R1"]
         self.NEBIUS_MODELS = []
 
         self.load_model()
@@ -46,10 +48,10 @@ class ZS_Inference:
             os.mkdir(self.save_path)
 
         self.preds_file_path = os.path.join(self.save_path, "_".join([self.model_name, self.task, self.prompt_lang]))
-        # if os.path.exists(self.preds_file_path):
-        #     shutil.rmtree(self.preds_file_path)
+        if os.path.exists(self.preds_file_path):
+            shutil.rmtree(self.preds_file_path)
 
-        # os.mkdir(self.preds_file_path)
+        os.mkdir(self.preds_file_path)
 
     def load_data(self):
         self.dataset_helper = FT_Dataset("<｜end▁of▁sentence｜>", split=self.split, test_mode=False, shuffle=self.shuffle, shots=self.shots)
@@ -79,6 +81,53 @@ class ZS_Inference:
             #     self.api_model_inference_nebius()
             elif self.model_name in self.NOVITA_MODELS:
                 self.api_model_inference_novita()
+            elif self.model_name in self.DEEPSEEK_MODELS:
+                self.api_model_inference_deepseek()
+
+    def api_model_inference_deepseek(self):
+        print("CALLING DEEPSEEK API")
+
+        for i, text in enumerate(self.dataset["text"]):
+            if i == self.call_limit: break
+
+            q, a, = None, None
+            if self.prompt_lang == "ar":
+                q = text.split(":إجابة###")[0]
+                a = text.split(":إجابة###")[1]
+            else:
+                q = text.split("### Response:")[0]
+                a = text.split("### Response:")[1]
+
+            client = OpenAI(
+                base_url="https://api.deepseek.com",
+                api_key="sk-1023ce7c74fa4c5aaadd299c2758f0e3",
+            ) 
+
+
+            chat_completion_res = client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""{q}""",
+                    }
+                ],
+                # max_tokens=1024,
+            )
+
+            res = chat_completion_res.choices[0].message.content
+            res_r = chat_completion_res.choices[0].message.reasoning_content
+
+            logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
+                
+            logger(q)
+            logger("=================================================================================")
+            logger(a)
+            logger("=================================================================================")
+            logger(res)
+            logger("=================================================================================")
+            logger(res_r)
+            print(f"{i} ------------------------------------------\n\n\n")
 
     def local_model_inference(self):
         for i, prompt in enumerate(self.dataset["text"]):
