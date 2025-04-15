@@ -245,13 +245,6 @@ class Eval:
             self.preds[i] = self.preds[i].replace("\n", "")
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.eos_token, "").replace("<｜end▁of▁sentence｜>", "")
 
-
-        print(self.preds[:5])
-        print()
-        print(self.answers[:5])
-
-        exit()
-
         return self.calculate_rouge(self.preds, self.answers)
 
     def calculate_F1(self, preds, answers):
@@ -287,10 +280,16 @@ class Eval:
         rouge = Rouge()
         abstractive_rouge_1_scores, abstractive_rouge_2_scores, abstractive_rouge_l_scores = [], [], []
         for g_text, t_text in zip(preds, answers):
-            scores = rouge.get_scores(g_text, t_text)[0]
-            abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
-            abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
-            abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
+            try:
+                scores = rouge.get_scores(g_text, t_text)[0]
+                abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
+                abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
+                abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
+            except:
+                scores = rouge.get_scores(g_text[:1000], t_text[:1000])[0]
+                abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
+                abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
+                abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
 
         avg_abstractive_rouge_1 = sum(abstractive_rouge_1_scores) / len(abstractive_rouge_1_scores) if abstractive_rouge_1_scores else 0
         avg_abstractive_rouge_2 = sum(abstractive_rouge_2_scores) / len(abstractive_rouge_2_scores) if abstractive_rouge_2_scores else 0
