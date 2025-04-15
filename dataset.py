@@ -787,19 +787,32 @@ class FT_Dataset:
             "خبب",
             "واطن"
         ]
-        shot_exs = [
+        shot_defs = [
             ": اندس بين الناس: اختفى، تسلل خفية بينهم",
             ": هوس السرقة: (طب) نزعة إلى السرقة في كل الحالات",
             ": عتله إلى السجن جذبه وجره بعنف :- { } .",
             ": نوع من أنواع سير الفرس بحيث تمس أقدامها الأرض بشكل متتابع",
             ": وافقه عليه"
         ]
-        shot_defs = [
-            
+        shot_exs = [
+            ":-اندس في الفراش خشية البرد.",
+            ":-تعاني من هوس السرقة على الرغم من أنها غنية.",
+            "عتل بعد ذلك زنيم",
+            ":-مشى خببا.",
+            ":-واطنه على التعاون معه في بناء السور."
         ]
-        shot_labels = [
-            
-        ]
+        shot_labels = ["0", "1", "0", "1", "0"]
+        if self.shots > 0:
+            examples = self.e_head
+            for i in range(self.shots):
+                examples += self.q_head
+                examples += "جملة: " if self.lang == "ar" else "Sentence: "
+                examples += shot_exs[i] + "\n"
+                examples += "كلمة: " if self.lang == "ar" else "Word: "
+                examples += shot_words[i] + "\n"
+                examples += ":تعريف" if self.lang == "ar" else "Definition: "
+                examples += shot_defs[i] + "\n\n"
+                examples += self.a_head + "<answer>" + str(shot_labels[i]) + "</answer>\n\n"
 
         for (eg, word, de), label in zip(qs, labels):
             q_res = ""
