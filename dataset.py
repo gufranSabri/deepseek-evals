@@ -897,10 +897,12 @@ class FT_Dataset:
             self.prompt_template += "Write a response that appropriately completes the request.\n"
             self.prompt_template += "Dont say anything except the answer. Give the final answer between answer tags: <answer>...</answer>.\n"
             self.prompt_template += "\n"
-            self.prompt_template += "{}"
             self.prompt_template += "### Instruction:\n"
             self.prompt_template += f"{self.task_instructions[task]}\n"
             self.prompt_template += "\n"
+            self.prompt_template += "{}"
+            self.prompt_template += "\n"
+            self.prompt_template += "-------------------\n" if self.shots>0 else ""
             self.prompt_template += f"### Question:\n"
             self.prompt_template += "{}"
             self.prompt_template += "\n\n"
@@ -912,10 +914,12 @@ class FT_Dataset:
             self.prompt_template += "اكتب الرد الذي يكمل الطلب بشكل مناسب." + "\n"
             self.prompt_template += "لا تقل أي شيء باستثناء الإجابة. أعط الإجابة النهائية بين علامات الإجابة: <answer>...</answer>.\n"
             self.prompt_template += "\n"
-            self.prompt_template += "{}"
             self.prompt_template += ":تعليمات" + "###" + "\n"
             self.prompt_template += f"{self.task_instructions_ar[task]}\n"
             self.prompt_template += "\n"
+            self.prompt_template += "{}"
+            self.prompt_template += "\n"
+            self.prompt_template += "-------------------\n" if self.shots>0 else ""
             self.prompt_template += ":سؤال" + "###" + "\n"
             self.prompt_template += "{}"
             self.prompt_template += "\n\n"
@@ -1021,6 +1025,6 @@ if __name__ == "__main__":
     # FT_Dataset("", split="test", shots=5).get_dataset("GQA", "en")
     # FT_Dataset("", split="test", shots=5).get_dataset("sarcasm", "ar")
     # FT_Dataset("", split="test", shots=5).get_dataset("dialect", "ar")
-    FT_Dataset("", split="test", shots=5).get_dataset("hate", "ar")
-    FT_Dataset("", split="test", shots=5).get_dataset("offensive", "en")
+    # FT_Dataset("", split="test", shots=5).get_dataset("hate", "ar")
+    FT_Dataset("", split="test", shots=3).get_dataset("offensive", "en")
 
