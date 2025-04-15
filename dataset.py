@@ -940,8 +940,8 @@ class FT_Dataset:
         self.lang = lang
         print(self.lang, "==========================")
 
-        self.q_head =  "### Query:\n" if self.lang == "en" else (":تساؤل" + "###" + "\n")
-        self.a_head = "### Answer:\n" if self.lang == "en" else (":استجابة" + "###" + "\n")
+        self.q_head =  "### Question:\n" if self.lang == "en" else (":سؤال" + "##" + "\n")
+        self.a_head = "### Response:\n" if self.lang == "en" else (":إجابة" + "##" + "\n")
         self.e_head = "EXAMPLES:\n" if self.lang == "en" else "أمثلة:\n"
         
         self.construct_prompt(task, lang)
@@ -1025,6 +1025,6 @@ if __name__ == "__main__":
     # FT_Dataset("", split="test", shots=5).get_dataset("GQA", "en")
     # FT_Dataset("", split="test", shots=5).get_dataset("sarcasm", "ar")
     # FT_Dataset("", split="test", shots=5).get_dataset("dialect", "ar")
-    # FT_Dataset("", split="test", shots=5).get_dataset("hate", "ar")
-    FT_Dataset("", split="test", shots=3).get_dataset("offensive", "en")
+    FT_Dataset("", split="test", shots=5).get_dataset("hate", "ar")
+    # FT_Dataset("", split="test", shots=3).get_dataset("offensive", "en")
 
