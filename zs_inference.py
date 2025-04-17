@@ -100,7 +100,7 @@ class ZS_Inference:
 
             client = OpenAI(
                 base_url="https://api.deepseek.com",
-                api_key="sk-1023ce7c74fa4c5aaadd299c2758f0e3",
+                api_key="API_KEY",
             ) 
 
 
@@ -192,7 +192,7 @@ class ZS_Inference:
 
             client = OpenAI(
                 base_url="https://api.novita.ai/v3/openai",
-                api_key="sk_XTZ7jxWmpXeqCiVG-QuFN3jj1FiDLK1EyOVudLleglk",
+                api_key="API_KEY",
             ) 
 
 
