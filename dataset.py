@@ -940,8 +940,8 @@ class FT_Dataset:
         self.lang = lang
         print(self.lang, "==========================")
 
-        self.q_head =  "### Question:\n" if self.lang == "en" else (":سؤال" + "##" + "\n")
-        self.a_head = "### Response:\n" if self.lang == "en" else (":إجابة" + "##" + "\n")
+        self.q_head =  "## Question:\n" if self.lang == "en" else (":سؤال" + "##" + "\n")
+        self.a_head = "## Response:\n" if self.lang == "en" else (":إجابة" + "##" + "\n")
         self.e_head = "EXAMPLES:\n" if self.lang == "en" else "أمثلة:\n"
         
         self.construct_prompt(task, lang)
