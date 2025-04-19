@@ -192,7 +192,7 @@ class ZS_Inference:
 
             client = OpenAI(
                 base_url="https://api.novita.ai/v3/openai",
-                api_key="sk_XTZ7jxWmpXeqCiVG-QuFN3jj1FiDLK1EyOVudLleglk",
+                api_key="token",
             ) 
 
 
