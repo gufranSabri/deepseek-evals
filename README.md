@@ -1,4 +1,4 @@
-# DeepSeek Evals
+# AraReasoner
 
 This repository is designed to evaluate reasoning based LLMs on in-context and finetuning tasks.
 
