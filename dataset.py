@@ -13,7 +13,7 @@ from datasets import load_dataset
 
 class FT_Dataset:
     def __init__(self, EOS_TOKEN, split="train", shots=0, logger = None, test_mode=False, shuffle=False):
-        login(token="token")
+        login(token="hf_token")
 
         assert shots in [0, 1, 3, 5, 10], "Shots should be one of 0, 1, 3, 5, 10"
         self.shots = shots
@@ -940,7 +940,7 @@ class FT_Dataset:
         self.lang = lang
         print(self.lang, "==========================")
 
-        self.q_head = "## Question:\n" if self.lang == "en" else (":سؤال" + "##" + "\n")
+        self.q_head =  "## Question:\n" if self.lang == "en" else (":سؤال" + "##" + "\n")
         self.a_head = "## Response:\n" if self.lang == "en" else (":إجابة" + "##" + "\n")
         self.e_head = "EXAMPLES:\n" if self.lang == "en" else "أمثلة:\n"
         
@@ -975,8 +975,8 @@ class FT_Dataset:
             dataset = load_dataset(dataset_name, subset_name, split=self.dataset_splits[task_split], trust_remote_code=True)
 
             # save as csv
-            df = pd.DataFrame(dataset)
-            df.to_csv("./train.csv", index=False)
+            # df = pd.DataFrame(dataset)
+            # df.to_csv("./train.csv", index=False)
 
         self.size = dataset.num_rows
         dataset = dataset.map(self.prompt_func_map[task_split], batched = True)
@@ -1014,10 +1014,10 @@ class FT_Dataset:
 if __name__ == "__main__":
     # FT_Dataset("", split="test", shots=5).get_dataset("sentiment", "ar")
     # FT_Dataset("", split="train", shots=5).get_dataset("pos_tagging", "ar")
-    # FT_Dataset("", split="test", shots=5).get_dataset("summarization", "en")
+    FT_Dataset("", split="test", shots=5).get_dataset("summarization", "en")
     # FT_Dataset("", split="test", shots=5).get_dataset("translation", "ar")
     # FT_Dataset("", split="train", shots=5).get_dataset("paraphrasing", "en")
-    # FT_Dataset("", split="test", shots=5).get_dataset("transliteration", "ar")
+    # FT_Dataset("", split="test", shots=3).get_dataset("transliteration", "ar")
     # FT_Dataset("", split="test", shots=5).get_dataset("sqs", "ar")
     # FT_Dataset("", split="test", shots=5).get_dataset("stance", "ar")
     # FT_Dataset("", split="test", shots=5).get_dataset("claim", "ar")
@@ -1025,6 +1025,6 @@ if __name__ == "__main__":
     # FT_Dataset("", split="test", shots=5).get_dataset("GQA", "en")
     # FT_Dataset("", split="test", shots=5).get_dataset("sarcasm", "ar")
     # FT_Dataset("", split="test", shots=5).get_dataset("dialect", "ar")
-    FT_Dataset("", split="test", shots=5).get_dataset("hate", "ar")
+    # FT_Dataset("", split="test", shots=5).get_dataset("hate", "ar")
     # FT_Dataset("", split="test", shots=3).get_dataset("offensive", "en")
 

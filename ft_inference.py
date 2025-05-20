@@ -7,7 +7,7 @@ from utils import Logger
 from unsloth import FastLanguageModel
 
 class FT_Inference:
-    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", models_dir="./ft_models", logs_dir="./ft_logs"):
+    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", models_dir="/data/ahmed026/ds", logs_dir="./ft_logs"):
         self.task = task
         self.model_name = model_name
         self.prompt_lang = prompt_lang

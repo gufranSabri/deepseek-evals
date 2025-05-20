@@ -13,3 +13,6 @@ python zs_inference.py --task summarization --model Q14B --prompt_lang en --save
 python zs_inference.py --task translation --model Q14B --prompt_lang ar --save_path ./zs_preds #6220
 python zs_inference.py --task transliteration --model Q14B --prompt_lang ar --save_path ./zs_preds #6220
 python zs_inference.py --task sentiment --model Q14B --prompt_lang ar --save_path ./zs_preds #6220
+
+
+python zs_eval.py --task stance --model Q14B --prompt_lang ar

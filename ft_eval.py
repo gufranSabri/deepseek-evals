@@ -206,18 +206,12 @@ class Eval:
         self.get_preds()
         self.answers = self.answers[:len(self.preds)]
 
-
+        self.preds = self.preds[9921:]
+        self.answers = self.answers[9921:]
 
         for i in range(len(self.preds)):
             self.preds[i] = self.preds[i][1].replace("\n", "")
             self.answers[i] = self.answers[i].replace("\n", "").replace(self.tokenizer.eos_token, "")
-
-        # print(self.preds[:5])
-        # print()
-        # print(self.answers[:5])
-
-        # exit()
-
 
         return self.calculate_rouge(self.preds, self.answers)
 

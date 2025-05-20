@@ -82,8 +82,8 @@ def finetune(args, logger):
     logger(f"Training loss: {trainer_stats.training_loss}")
     logger(f"Time Taken: {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
 
-    if not os.path.exists("./ft_models"): os.mkdir("./ft_models")
-    model_path = os.path.join("./ft_models/", f"{args.model}_{args.task}_{args.prompt_lang}")
+    if not os.path.exists(args.save_path): os.mkdir(args.save_path)
+    model_path = os.path.join(args.save_path, f"{args.model}_{args.task}_{args.prompt_lang}")
     os.mkdir(model_path)
 
     model.save_pretrained(model_path) 
@@ -102,6 +102,7 @@ if __name__ == '__main__':
     parser.add_argument('--gradient_accumulation_steps', dest='gradient_accumulation_steps', default='2')
     parser.add_argument('--epochs', dest='epochs', default='2')
     parser.add_argument('--max_steps', dest='max_steps', default='100000')
+    parser.add_argument('--save_path', dest='save_path', default='./ft_models')
     args=parser.parse_args()
 
     args.rank = int(args.rank)

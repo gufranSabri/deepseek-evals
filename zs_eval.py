@@ -11,7 +11,7 @@ from utils import Logger
 from evaluate import load
 
 class Eval:
-    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", preds_folder="./zs_preds"):
+    def __init__(self, task, model_name="Q1.5B", prompt_lang="ar", preds_folder="./zs_preds5"):
         self.task = task
         self.model_name = model_name
         self.prompt_lang = prompt_lang
@@ -225,6 +225,9 @@ class Eval:
             self.preds[i] = extract_first_digit(self.preds[i].replace("\n", "").replace(" ", "").strip())
             self.answers[i] = extract_first_digit(self.answers[i].replace("\n", "").replace(self.eos_token, "").replace("<｜end▁of▁sentence｜>", ""))
 
+        # for i in zip(self.preds, self.answers):
+        #     print(i)
+
         return self.calculate_F1(self.preds, self.answers)
 
     def bleu(self):
@@ -240,6 +243,9 @@ class Eval:
     def rouge(self):
         self.get_preds()
         self.answers = self.answers[:len(self.preds)]
+
+        self.preds = self.preds[9921:]
+        self.answers = self.answers[9921:]
 
         for i in range(len(self.preds)):
             self.preds[i] = self.preds[i].replace("\n", "")
@@ -285,7 +291,7 @@ class Eval:
                 abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
                 abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
                 abstractive_rouge_l_scores.append(scores['rouge-l']['f'])
-            except:
+            except Exception as e:
                 scores = rouge.get_scores(g_text[:1000], t_text[:1000])[0]
                 abstractive_rouge_1_scores.append(scores['rouge-1']['f'])
                 abstractive_rouge_2_scores.append(scores['rouge-2']['f'])
@@ -307,10 +313,11 @@ if __name__ == "__main__":
     parser.add_argument('--model',dest='model')
     parser.add_argument('--prompt_lang',dest='prompt_lang', default='ar', help='ar, en')
     parser.add_argument('--task',dest='task', default='sentiment')
+    parser.add_argument('--preds_folder',dest='preds_folder', default='./zs_preds')
     args=parser.parse_args()
 
     # assert args.model in ["Q1.5B", "Q7B", "Q14B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
 
-    e = Eval(args.task, args.model, args.prompt_lang)
+    e = Eval(args.task, args.model, args.prompt_lang, args.preds_folder)
     e.evaluate()

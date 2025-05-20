@@ -26,20 +26,27 @@ class ZS_Inference:
 
         self.API_MODELS = {
             # "V3": "deepseek-ai/DeepSeek-V3", #nebius
-            "V3": "deepseek/deepseek_v3", #novita
+            # "V3": "deepseek/deepseek_v3", #novita
+            "V3" : "deepseek-chat", #deepseek
+
             # "R1": "deepseek-ai/DeepSeek-R1",
             "R1": "deepseek-reasoner",
-            "Q1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-            # "Q14B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" #together
-            "Q14B": "deepseek/deepseek-r1-distill-qwen-14b" #novita
+
+            "QWQ": "qwen/qwq-32b",
+            
+            "Q1.5B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", #nebius
+            "Q14B": "deepseek/deepseek-r1-distill-qwen-14b", #novita
+            "Q32B": "deepseek/deepseek-r1-distill-qwen-32b" #novita
         }
         self.shuffle = self.model_name in ["Q14B", "Q1.5B"]
-        self.split = "test" if self.model_name in ["V3", "R1"] else "train"
+        self.split = "test" if self.model_name in ["V3", "R1", "QWQ", "Q14B", "Q32B"] else "train"
+        args.resume = True if args.resume == "1" else False
+
+        print("SPLIT:", self.split)
 
         self.TOGETHER_MODELS = ["Q1.5B"]
-        self.NOVITA_MODELS = ["V3", "Q14B", "R1"]
-        self.DEEPSEEK_MODELS = ["R1"]
-        self.NEBIUS_MODELS = []
+        self.NOVITA_MODELS = ["Q14B", "R1", "QWQ", "Q32B"]
+        self.DEEPSEEK_MODELS = ["R1", "V3"]
 
         self.load_model()
         self.load_data()
@@ -48,10 +55,18 @@ class ZS_Inference:
             os.mkdir(self.save_path)
 
         self.preds_file_path = os.path.join(self.save_path, "_".join([self.model_name, self.task, self.prompt_lang]))
-        if os.path.exists(self.preds_file_path):
+        self.start = 0
+        if os.path.exists(self.preds_file_path) and not args.resume:
+            print("Deleting previous predictions...")
             shutil.rmtree(self.preds_file_path)
-
-        os.mkdir(self.preds_file_path)
+            self.start = len(os.listdir(self.preds_file_path)) if os.path.exists(self.preds_file_path) else 0
+            os.mkdir(self.preds_file_path)
+        elif not os.path.exists(self.preds_file_path):
+            os.mkdir(self.preds_file_path)
+            self.start = 0
+        elif args.resume:
+            print("Resuming from previous predictions...")
+            self.start = len(os.listdir(self.preds_file_path))
 
     def load_data(self):
         self.dataset_helper = FT_Dataset("<｜end▁of▁sentence｜>", split=self.split, test_mode=False, shuffle=self.shuffle, shots=self.shots)
@@ -77,8 +92,6 @@ class ZS_Inference:
         else:
             if self.model_name in self.TOGETHER_MODELS:
                 self.api_model_inference_together()
-            # elif self.model_name in self.NEBIUS_MODELS:
-            #     self.api_model_inference_nebius()
             elif self.model_name in self.NOVITA_MODELS:
                 self.api_model_inference_novita()
             elif self.model_name in self.DEEPSEEK_MODELS:
@@ -100,7 +113,7 @@ class ZS_Inference:
 
             client = OpenAI(
                 base_url="https://api.deepseek.com",
-                api_key="z",
+                api_key="sk-1023ce7c74fa4c5aaadd299c2758f0e3",
             ) 
 
 
@@ -116,8 +129,6 @@ class ZS_Inference:
             )
 
             res = chat_completion_res.choices[0].message.content
-            res_r = chat_completion_res.choices[0].message.reasoning_content
-
             logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
                 
             logger(q)
@@ -125,8 +136,6 @@ class ZS_Inference:
             logger(a)
             logger("=================================================================================")
             logger(res)
-            logger("=================================================================================")
-            logger(res_r)
             print(f"{i} ------------------------------------------\n\n\n")
 
     def local_model_inference(self):
@@ -147,39 +156,11 @@ class ZS_Inference:
             else:
                 logger(response[0].split("### Response:")[1].replace("<｜end▁of▁sentence｜>", "").replace("<｜end▁of▁sentence｜>", ""))
 
-            
-    # def api_model_inference_nebius(self):
-    #     print("CALLING NEBIUS API")
-
-    #     for i, text in enumerate(self.dataset["text"]):
-    #         if i == self.call_limit: break
-
-    #         client = OpenAI(
-    #             base_url="https://api.studio.nebius.ai/v1/",
-    #             api_key=os.environ.get("OPENAI_API_KEY"),
-    #         )
-
-    #         completion = client.chat.completions.create(
-    #             model=self.model,
-    #             messages=[
-    #                 {
-    #                     "role": "user",
-    #                     "content": f"""{text}"""
-    #                 }
-    #             ],
-    #             temperature=0
-    #         )
-
-    #         j = completion.to_dict()
-    #         res = j["choices"][0]["message"]["content"]
-    #         logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
-    #         logger(res)
-    #         print(f"{i} ------------------------------------------\n")
-
     def api_model_inference_novita(self):
         print("CALLING NOVITA API")
 
         for i, text in enumerate(self.dataset["text"]):
+            if i < self.start: continue
             if i == self.call_limit: break
 
             q, a, = None, None
@@ -192,22 +173,25 @@ class ZS_Inference:
 
             client = OpenAI(
                 base_url="https://api.novita.ai/v3/openai",
-                api_key="token",
+                api_key="sk_XTZ7jxWmpXeqCiVG-QuFN3jj1FiDLK1EyOVudLleglk",
             ) 
 
+            if self.task == "summarization" and i < 9921:
+                res = "<think>\nempty\n</think>\n\n<answer>0</answer>"
 
-            chat_completion_res = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"""{q}""",
-                    }
-                ],
-                # max_tokens=1024,
-            )
+            else:
+                chat_completion_res = client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": f"""{q}""",
+                        }
+                    ],
+                    # max_tokens=1024,
+                )
+                res = chat_completion_res.choices[0].message.content
 
-            res = chat_completion_res.choices[0].message.content
             logger = Logger(os.path.join(self.preds_file_path, f"{i}.txt"))
                 
             logger(q)
@@ -226,6 +210,7 @@ class ZS_Inference:
         requests_sent = 0  # Track requests per minute
 
         for i, text in enumerate(self.dataset["text"]):
+            if i < self.start: continue
             if i == self.call_limit: break
 
             q, a = None, None
@@ -281,7 +266,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', dest='batch_size', default='2')
     parser.add_argument('--shots', dest='shots', default='0')
     parser.add_argument('--save_path', dest='save_path', default='./zs_preds')
-    parser.add_argument('--call_limit', dest='call_limit', default="10000")
+    parser.add_argument('--call_limit', dest='call_limit', default="20000")
+    parser.add_argument('--resume', dest='resume', default="1")
     args=parser.parse_args()
 
     args.rank = int(args.rank)
@@ -291,7 +277,7 @@ if __name__ == '__main__':
     args.shots = int(args.shots)
     args.call_limit = int(args.call_limit)
 
-    assert args.model in ["V3", "R1", "Q1.5B", "Q14B"], "Invalid model!"
+    assert args.model in ["V3", "R1", "Q1.5B", "Q14B", "QWQ", "Q32B"], "Invalid model!"
     assert args.prompt_lang in ["en", "ar"], "Only 'en' and 'ar' languages supported!"
     assert args.rank in [4, 8, 16], "Invalid Rank!"
     assert args.load_4bit in [0, 1], "Invalid Rank!"
